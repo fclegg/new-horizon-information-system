@@ -14,17 +14,7 @@ import { db } from "../firebase/config";
 
 /*
  * =========================================================
- * DEMON TERMS DATABASE
- * =========================================================
- *
- * These values are based on the New Horizon Demon Terms
- * reference document.
- *
- * Types
- * Sub-Types
- * Classes
- * Sub-Classes
- * Ranks
+ * ENTITY TYPES DATABASE
  * =========================================================
  */
 
@@ -132,7 +122,6 @@ const encounterTypes = [
   "Second-hand",
 ];
 
-
 /*
  * =========================================================
  * SPIRIT DATABASE
@@ -149,6 +138,7 @@ function SpiritDatabase() {
    */
 
   const [search, setSearch] = useState("");
+
   const [classificationFilter, setClassificationFilter] =
     useState("All");
 
@@ -160,7 +150,6 @@ function SpiritDatabase() {
   const [saving, setSaving] = useState(false);
 
   const [error, setError] = useState("");
-
 
   /*
    * =========================================================
@@ -186,149 +175,6 @@ function SpiritDatabase() {
   const [newEntity, setNewEntity] =
     useState(emptyEntity);
 
-
-  /*
-   * =========================================================
-   * EXISTING TEST DATA
-   * =========================================================
-   *
-   * These remain intentionally.
-   *
-   * They are not written to Firestore.
-   */
-
-  const testEntities = [
-    {
-      id: "ENT-001",
-      name: "Example Entity",
-      classification: "Demon",
-
-      nameType: "Pseudonym",
-      nameMeaning: "Example meaning",
-
-      type: "Humanoid / Humanoids",
-      subtype: "Daeva",
-
-      classFunction:
-        "Oppressor / Oppressors",
-
-      subclass:
-        "Warden / Wardens",
-
-      eyeColor: "Red",
-      rank: "Regionem",
-
-      aliases: [
-        "Example Name",
-        "Alternate Name",
-      ],
-
-      characteristics: [
-        "Intelligent",
-        "Aggressive",
-        "Auditory",
-      ],
-
-      cases: 2,
-      evidence: 5,
-
-      caseIds: [],
-
-      status: "Active",
-
-      encounterType: "First-hand",
-
-      encounterSource:
-        "Test investigation record",
-
-      isTest: true,
-    },
-
-    {
-      id: "ENT-002",
-      name: "Unknown Male Entity",
-      classification: "Human Spirit",
-
-      nameType: "Pseudonym",
-      nameMeaning: "",
-
-      type: "",
-      subtype: "",
-
-      classFunction: "",
-      subclass: "",
-
-      eyeColor: "",
-      rank: "",
-
-      aliases: [
-        "The Man",
-      ],
-
-      characteristics: [
-        "Intelligent",
-        "Vocal",
-        "Apparition",
-      ],
-
-      cases: 1,
-      evidence: 3,
-
-      caseIds: [],
-
-      status: "Unconfirmed",
-
-      encounterType: "Second-hand",
-
-      encounterSource:
-        "Test witness account",
-
-      isTest: true,
-    },
-
-    {
-      id: "ENT-003",
-      name: "Example Angelic Entity",
-      classification: "Angel",
-
-      nameType: "Pseudonym",
-      nameMeaning: "",
-
-      type: "Seraph / Seraphim",
-      subtype: "",
-
-      classFunction: "",
-      subclass: "",
-
-      eyeColor: "White",
-      rank: "",
-
-      aliases: [
-        "Unknown Messenger",
-      ],
-
-      characteristics: [
-        "Visual",
-        "Protective",
-      ],
-
-      cases: 1,
-      evidence: 2,
-
-      caseIds: [],
-
-      status: "Reference",
-
-      encounterType: "Second-hand",
-
-      encounterSource:
-        "Test reference",
-
-      isTest: true,
-    },
-  ];
-
-
   /*
    * =========================================================
    * LOAD DATABASE
@@ -339,7 +185,6 @@ function SpiritDatabase() {
     loadEntities();
     loadCases();
   }, []);
-
 
   /*
    * =========================================================
@@ -426,10 +271,6 @@ function SpiritDatabase() {
                 ? data.characteristics
                 : [],
 
-            /*
-             * Compatibility field.
-             */
-
             classification:
               data.classification ||
               data.type ||
@@ -449,8 +290,9 @@ function SpiritDatabase() {
           };
         });
 
-      setEntities(firestoreEntities);
-
+      setEntities(
+        firestoreEntities
+      );
     } catch (err) {
       console.error(
         "Error loading entities:",
@@ -460,12 +302,10 @@ function SpiritDatabase() {
       setError(
         "Unable to load entity records."
       );
-
     } finally {
       setLoading(false);
     }
   }
-
 
   /*
    * =========================================================
@@ -503,8 +343,9 @@ function SpiritDatabase() {
         )
       );
 
-      setCases(loadedCases);
-
+      setCases(
+        loadedCases
+      );
     } catch (err) {
       console.error(
         "Error loading cases:",
@@ -513,11 +354,12 @@ function SpiritDatabase() {
     }
   }
 
-
   /*
    * =========================================================
    * GENERATE ENTITY ID
    * =========================================================
+   *
+   * The first real entity will be ENT-001.
    */
 
   function generateEntityId(
@@ -559,7 +401,6 @@ function SpiritDatabase() {
     ).padStart(3, "0")}`;
   }
 
-
   /*
    * =========================================================
    * UPDATE FORM FIELD
@@ -578,7 +419,6 @@ function SpiritDatabase() {
     );
   }
 
-
   /*
    * =========================================================
    * OPEN ADD ENTITY
@@ -587,12 +427,15 @@ function SpiritDatabase() {
 
   function openAddEntity() {
     setError("");
+
     setNewEntity(
       emptyEntity
     );
-    setShowAddEntity(true);
-  }
 
+    setShowAddEntity(
+      true
+    );
+  }
 
   /*
    * =========================================================
@@ -605,10 +448,12 @@ function SpiritDatabase() {
       return;
     }
 
-    setShowAddEntity(false);
+    setShowAddEntity(
+      false
+    );
+
     setError("");
   }
-
 
   /*
    * =========================================================
@@ -624,7 +469,7 @@ function SpiritDatabase() {
     setError("");
 
     /*
-     * Required field.
+     * Spirit Name is required.
      */
 
     if (
@@ -641,27 +486,23 @@ function SpiritDatabase() {
       setSaving(true);
 
       /*
-       * Generate the next ENT number.
+       * Generate the next entity ID
+       * using ONLY real Firestore records.
        */
 
       const entityId =
-        generateEntityId([
-          ...testEntities,
-          ...entities,
-        ]);
+        generateEntityId(
+          entities
+        );
 
       /*
        * Case relationship.
-       *
-       * "None" is stored as an
-       * empty caseIds array.
        */
 
       const caseIds =
         newEntity.caseId
           ? [newEntity.caseId]
           : [];
-
 
       /*
        * Build Firestore record.
@@ -716,7 +557,7 @@ function SpiritDatabase() {
         incidentReportIds: [],
 
         /*
-         * Existing profile fields.
+         * Profile fields.
          */
 
         aliases: [],
@@ -737,7 +578,6 @@ function SpiritDatabase() {
           serverTimestamp(),
       };
 
-
       /*
        * Create Firestore record.
        */
@@ -751,11 +591,9 @@ function SpiritDatabase() {
           entityRecord
         );
 
-
       /*
        * If a case was selected,
-       * update the case so the
-       * relationship works both ways.
+       * create the reverse relationship.
        */
 
       if (
@@ -797,9 +635,8 @@ function SpiritDatabase() {
         }
       }
 
-
       /*
-       * Reset and close.
+       * Reset form.
        */
 
       setNewEntity(
@@ -811,14 +648,13 @@ function SpiritDatabase() {
       );
 
       /*
-       * Refresh data.
+       * Refresh database.
        */
 
       await Promise.all([
         loadEntities(),
         loadCases(),
       ]);
-
     } catch (err) {
       console.error(
         "Error creating entity:",
@@ -828,24 +664,25 @@ function SpiritDatabase() {
       setError(
         "Unable to create the entity record."
       );
-
     } finally {
       setSaving(false);
     }
   }
 
-
   /*
    * =========================================================
-   * COMBINED ENTITY DATA
+   * ENTITY DATA
    * =========================================================
+   *
+   * IMPORTANT:
+   * There are NO test entities here.
+   *
+   * Everything displayed comes directly
+   * from the Firestore entities collection.
    */
 
-  const allEntities = [
-    ...testEntities,
-    ...entities,
-  ];
-
+  const allEntities =
+    entities;
 
   /*
    * =========================================================
@@ -900,7 +737,6 @@ function SpiritDatabase() {
       }
     );
 
-
   /*
    * =========================================================
    * STATISTICS
@@ -935,7 +771,6 @@ function SpiritDatabase() {
           "Angel"
     ).length;
 
-
   /*
    * =========================================================
    * RENDER
@@ -964,7 +799,6 @@ function SpiritDatabase() {
           </p>
 
         </div>
-
 
         <button
           type="button"
@@ -1138,7 +972,6 @@ function SpiritDatabase() {
 
           </div>
 
-
           <span className="nh-member-count">
             {filteredEntities.length} records
           </span>
@@ -1152,9 +985,7 @@ function SpiritDatabase() {
 
         <div className="nh-card nh-spirit-table">
 
-          {/* =================================================
-              TABLE HEADER
-              ================================================= */}
+          {/* TABLE HEADER */}
 
           <div className="nh-spirit-row nh-spirit-header">
 
@@ -1181,9 +1012,7 @@ function SpiritDatabase() {
           </div>
 
 
-          {/* =================================================
-              LOADING STATE
-              ================================================= */}
+          {/* LOADING STATE */}
 
           {loading ? (
 
@@ -1204,9 +1033,7 @@ function SpiritDatabase() {
                   }
                 >
 
-                  {/* =========================================
-                      ENTITY
-                      ========================================= */}
+                  {/* ENTITY */}
 
                   <div className="nh-spirit-identity">
 
@@ -1229,9 +1056,7 @@ function SpiritDatabase() {
                   </div>
 
 
-                  {/* =========================================
-                      TYPE
-                      ========================================= */}
+                  {/* TYPE */}
 
                   <div>
 
@@ -1244,9 +1069,7 @@ function SpiritDatabase() {
                   </div>
 
 
-                  {/* =========================================
-                      CLASS / FUNCTION
-                      ========================================= */}
+                  {/* CLASS / FUNCTION */}
 
                   <div className="nh-spirit-cell">
 
@@ -1256,9 +1079,7 @@ function SpiritDatabase() {
                   </div>
 
 
-                  {/* =========================================
-                      CASES
-                      ========================================= */}
+                  {/* CASES */}
 
                   <div className="nh-spirit-number">
 
@@ -1267,9 +1088,7 @@ function SpiritDatabase() {
                   </div>
 
 
-                  {/* =========================================
-                      ACTION
-                      ========================================= */}
+                  {/* ACTION */}
 
                   <div className="nh-spirit-action">
 
@@ -1298,18 +1117,39 @@ function SpiritDatabase() {
           )}
 
 
-          {/* =================================================
-              EMPTY STATE
-              ================================================= */}
+          {/* EMPTY STATE */}
 
           {filteredEntities.length ===
             0 &&
             !loading && (
 
               <div className="nh-spirit-empty">
-                No entities match the
-                current search or
-                classification.
+
+                <div
+                  style={{
+                    fontSize: "28px",
+                    marginBottom: "10px",
+                    opacity: 0.5,
+                  }}
+                >
+                  ◈
+                </div>
+
+                <div>
+                  No entity records found.
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "12px",
+                    opacity: 0.65,
+                  }}
+                >
+                  Click "+ Add Entity" to
+                  create the first record.
+                </div>
+
               </div>
 
             )}
@@ -1388,7 +1228,9 @@ function SpiritDatabase() {
 
             <form
               className="nh-entity-form"
-              onSubmit={handleAddEntity}
+              onSubmit={
+                handleAddEntity
+              }
             >
 
               {error && (
@@ -1920,7 +1762,9 @@ function SpiritDatabase() {
                 <button
                   type="button"
                   className="nh-button nh-button-secondary"
-                  onClick={closeAddEntity}
+                  onClick={
+                    closeAddEntity
+                  }
                   disabled={saving}
                 >
                   Cancel

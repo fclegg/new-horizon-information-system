@@ -1,4 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -35,6 +42,12 @@ import IncidentReport from "./pages/IncidentReport";
 import FinalAssessment from "./pages/FinalAssessment";
 import EvidenceSubmission from "./pages/EvidenceSubmission";
 
+import Applications from "./pages/Applications";
+import ApplicationReview from "./pages/ApplicationReview";
+
+import CultProfile from "./pages/CultProfile";
+import ObjectCaseFile from "./pages/ObjectCaseFile";
+
 
 /*
  * =========================================================
@@ -58,15 +71,17 @@ function ProtectedLayout() {
     return () => unsubscribe();
   }, []);
 
+
   /*
    * ---------------------------------------------------------
-   * AUTHENTICATION CHECK
+   * CHECKING AUTHENTICATION
    * ---------------------------------------------------------
    */
 
   if (checkingAuth) {
     return (
       <div className="nh-login-page">
+
         <div className="nh-login-panel">
 
           <div className="nh-login-header">
@@ -95,6 +110,7 @@ function ProtectedLayout() {
           </div>
 
         </div>
+
       </div>
     );
   }
@@ -193,6 +209,22 @@ function App() {
 
 
             {/* ===============================================
+                APPLICATIONS
+                DIRECTOR ONLY
+                =============================================== */}
+
+            <Route
+              path="/applications"
+              element={<Applications />}
+            />
+
+            <Route
+              path="/applications/:applicationId"
+              element={<ApplicationReview />}
+            />
+
+
+            {/* ===============================================
                 WITNESS REPORTS
                 =============================================== */}
 
@@ -261,8 +293,14 @@ function App() {
               element={<IncidentReport />}
             />
 
+            <Route
+              path="/cases/:caseId/incident-reports/:reportId"
+              element={<IncidentReport />}
+            />
+
+
             {/* ===============================================
-                FINAL ASSESMENT
+                FINAL ASSESSMENT
                 =============================================== */}
 
             <Route
@@ -275,11 +313,6 @@ function App() {
               element={<FinalAssessment />}
             />
 
-            <Route
-              path="/cases/:caseId/incident-reports/:reportId"
-              element={<IncidentReport />}
-            />
-
 
             {/* ===============================================
                 MEMBERS
@@ -290,14 +323,16 @@ function App() {
               element={<Members />}
             />
 
+
             {/* ===============================================
-                EVIDENCE
+                EVIDENCE SUBMISSION
                 =============================================== */}
-            
+
             <Route
               path="/investigations/:investigationId/evidence/new"
               element={<EvidenceSubmission />}
             />
+
 
             {/* ===============================================
                 SPIRIT DATABASE
@@ -318,9 +353,10 @@ function App() {
                 CULT REGISTRY
                 =============================================== */}
 
+            <Route path="/cults" element={<CultRegistry />} />
             <Route
-              path="/cults"
-              element={<CultRegistry />}
+              path="/cults/:cultId"
+              element={<CultProfile />}
             />
 
 
@@ -352,6 +388,9 @@ function App() {
               path="/objects"
               element={<Objects />}
             />
+
+            <Route path="/objects" element={<Objects />} />
+            <Route path="/objects/:objectId" element={<ObjectCaseFile />} />
 
 
             {/* ===============================================
@@ -413,7 +452,6 @@ function App() {
               element={<HauntingsMap />}
             />
 
-
           </Route>
 
         </Route>
@@ -438,6 +476,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;

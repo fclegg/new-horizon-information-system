@@ -1,965 +1,1249 @@
+import { useEffect, useMemo, useState } from "react";
+
 import {
   addDoc,
   collection,
-  deleteDoc,
-  doc,
   getDocs,
+  onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
 import { db } from "../firebase/config";
 
-function Members() {
-  const navigate = useNavigate();
 
-  const [members, setMembers] = useState([]);
+/*
+ * =========================================================
+ * STATUS / CONDITION / CALIBRATION HELPERS
+ * =========================================================
+ */
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [teamFilter, setTeamFilter] = useState("All");
+function statusClass(status) {
+  return (
+    "nh-equipment-status nh-equipment-status-" +
+    String(status || "")
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+  );
+}
+
+
+function conditionClass(condition) {
+  return (
+    "nh-equipment-condition nh-equipment-condition-" +
+    String(condition || "").toLowerCase()
+  );
+}
+
+
+function calibrationClass(calibration) {
+  return calibration === "Due"
+    ? "nh-equipment-calibration nh-equipment-calibration-due"
+    : "nh-equipment-calibration";
+}
+
+
+/*
+ * =========================================================
+ * EQUIPMENT
+ * =========================================================
+ */
+
+function Equipment() {
+
+  /*
+   * =======================================================
+   * STATE
+   * =======================================================
+   */
+
+  const [equipment, setEquipment] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const [error, setError] = useState("");
 
-  const [showAddMember, setShowAddMember] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [newMember, setNewMember] = useState({
-    name: "",
-    position: "Investigator",
-    team: "Investigation",
-    status: "Active",
-    dateJoined: "",
-    phone: "",
-    email: "",
-    address: "",
-    certifications: [],
-    training: "Incomplete",
-    beliefs: "",
-    emergencyContactName: "",
-    emergencyContactPhone: "",
-    emergencyContactRelationship: "",
-  });
+  const [statusFilter, setStatusFilter] =
+    useState("All");
 
-  /* =========================================================
-     LOAD MEMBERS
-     ========================================================= */
+  const [typeFilter, setTypeFilter] =
+    useState("All");
 
-  const loadMembers = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const [showAddModal, setShowAddModal] =
+    useState(false);
 
-      const snapshot = await getDocs(
-        collection(db, "members")
-      );
+  const [saving, setSaving] = useState(false);
 
-      const loadedMembers = snapshot.docs.map(
-        (memberDoc) => ({
-          firestoreId: memberDoc.id,
-          ...memberDoc.data(),
-        })
-      );
+  const [saveError, setSaveError] =
+    useState("");
 
-      loadedMembers.sort((a, b) =>
-        (a.memberId || "").localeCompare(
-          b.memberId || "",
-          undefined,
-          { numeric: true }
-        )
-      );
 
-      setMembers(loadedMembers);
-    } catch (err) {
-      console.error(
-        "Error loading members:",
-        err
-      );
+  /*
+   * =======================================================
+   * NEW EQUIPMENT FORM
+   * =======================================================
+   */
 
-      setError(
-        "Unable to load personnel records."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [newEquipment, setNewEquipment] =
+    useState({
+      name: "",
+      type: "",
+      status: "Available",
+      assignedTo: "",
+      condition: "Good",
+      calibration: "N/A",
+      lastMaintenance: "",
+    });
+
+
+  /*
+   * =======================================================
+   * FIRESTORE — EQUIPMENT
+   * =======================================================
+   *
+   * Equipment is stored in:
+   *
+   * equipment
+   *
+   * onSnapshot keeps the inventory live.
+   */
 
   useEffect(() => {
-    loadMembers();
+
+    const equipmentRef =
+      collection(db, "equipment");
+
+    const unsubscribe = onSnapshot(
+      equipmentRef,
+      (snapshot) => {
+
+        const equipmentRecords = [];
+
+        snapshot.forEach((equipmentDoc) => {
+
+          equipmentRecords.push({
+            firestoreId: equipmentDoc.id,
+            ...equipmentDoc.data(),
+          });
+
+        });
+
+        setEquipment(equipmentRecords);
+
+        setLoading(false);
+
+        setError("");
+
+      },
+      (err) => {
+
+        console.error(
+          "Error loading equipment:",
+          err
+        );
+
+        setError(
+          "Unable to load equipment data."
+        );
+
+        setLoading(false);
+
+      }
+    );
+
+    return () => unsubscribe();
+
   }, []);
 
-  /* =========================================================
-     GENERATE MEMBER ID
-     ========================================================= */
 
-  const generateMemberId = () => {
-    let highestNumber = 0;
+  /*
+   * =======================================================
+   * EQUIPMENT TYPES
+   * =======================================================
+   */
 
-    members.forEach((member) => {
-      const match = String(
-        member.memberId || ""
-      ).match(/^MEM-(\d+)$/);
+  const equipmentTypes = useMemo(() => {
 
-      if (match) {
-        const number = Number(match[1]);
+    const types = equipment
+      .map((item) => item.type)
+      .filter(Boolean);
 
-        if (number > highestNumber) {
-          highestNumber = number;
-        }
+    return [
+      "All",
+      ...new Set(types),
+    ];
+
+  }, [equipment]);
+
+
+  /*
+   * =======================================================
+   * FILTER EQUIPMENT
+   * =======================================================
+   */
+
+  const filteredEquipment = useMemo(() => {
+
+    const search =
+      searchTerm
+        .toLowerCase()
+        .trim();
+
+    return equipment.filter(
+      (item) => {
+
+        const matchesSearch =
+          !search ||
+          String(item.name || "")
+            .toLowerCase()
+            .includes(search) ||
+          String(item.id || "")
+            .toLowerCase()
+            .includes(search) ||
+          String(item.equipmentNumber || "")
+            .toLowerCase()
+            .includes(search) ||
+          String(item.type || "")
+            .toLowerCase()
+            .includes(search) ||
+          String(item.assignedTo || "")
+            .toLowerCase()
+            .includes(search);
+
+        const matchesStatus =
+          statusFilter === "All" ||
+          item.status === statusFilter;
+
+        const matchesType =
+          typeFilter === "All" ||
+          item.type === typeFilter;
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesType
+        );
+
       }
-    });
-
-    return `MEM-${String(
-      highestNumber + 1
-    ).padStart(3, "0")}`;
-  };
-
-  /* =========================================================
-     DELETE MEMBER
-     ========================================================= */
-
-  const handleDeleteMember = async (member) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete ${member.name}?\n\nThis cannot be undone.`
     );
 
-    if (!confirmed) {
+  }, [
+    equipment,
+    searchTerm,
+    statusFilter,
+    typeFilter,
+  ]);
+
+
+  /*
+   * =======================================================
+   * EQUIPMENT STATISTICS
+   * =======================================================
+   */
+
+  const totalEquipment =
+    equipment.length;
+
+
+  const availableEquipment =
+    equipment.filter(
+      (item) =>
+        item.status === "Available"
+    ).length;
+
+
+  const assignedEquipment =
+    equipment.filter(
+      (item) =>
+        item.status === "Assigned"
+    ).length;
+
+
+  const maintenanceEquipment =
+    equipment.filter(
+      (item) =>
+        item.status === "Maintenance"
+    ).length;
+
+
+  /*
+   * =======================================================
+   * FORM INPUT HANDLER
+   * =======================================================
+   */
+
+  const handleFormChange = (
+    event
+  ) => {
+
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setNewEquipment(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    );
+
+  };
+
+
+  /*
+   * =======================================================
+   * OPEN ADD EQUIPMENT
+   * =======================================================
+   */
+
+  const openAddEquipment = () => {
+
+    setSaveError("");
+
+    setNewEquipment({
+      name: "",
+      type: "",
+      status: "Available",
+      assignedTo: "",
+      condition: "Good",
+      calibration: "N/A",
+      lastMaintenance: "",
+    });
+
+    setShowAddModal(true);
+
+  };
+
+
+  /*
+   * =======================================================
+   * CLOSE ADD EQUIPMENT
+   * =======================================================
+   */
+
+  const closeAddEquipment = () => {
+
+    if (saving) {
       return;
     }
 
-    try {
-      setError("");
+    setShowAddModal(false);
 
-      await deleteDoc(
-        doc(
+    setSaveError("");
+
+  };
+
+
+  /*
+   * =======================================================
+   * GENERATE NEXT EQUIPMENT NUMBER
+   * =======================================================
+   *
+   * Equipment identifiers use:
+   *
+   * EQP-####
+   *
+   * Example:
+   *
+   * EQP-0001
+   * EQP-0002
+   * EQP-0003
+   */
+
+  const generateEquipmentNumber =
+    async () => {
+
+      const equipmentRef =
+        collection(
           db,
-          "members",
-          member.firestoreId
-        )
+          "equipment"
+        );
+
+      const snapshot =
+        await getDocs(
+          equipmentRef
+        );
+
+      let highestNumber = 0;
+
+      snapshot.forEach(
+        (equipmentDoc) => {
+
+          const data =
+            equipmentDoc.data();
+
+          const existingId =
+            data.equipmentNumber ||
+            data.id ||
+            "";
+
+          const match =
+            String(existingId).match(
+              /^EQP-(\d+)$/
+            );
+
+          if (match) {
+
+            const number =
+              Number(match[1]);
+
+            if (
+              number >
+              highestNumber
+            ) {
+              highestNumber =
+                number;
+            }
+
+          }
+
+        }
       );
 
-      setMembers((currentMembers) =>
-        currentMembers.filter(
-          (item) =>
-            item.firestoreId !==
-            member.firestoreId
-        )
-      );
-    } catch (err) {
-      console.error(
-        "Error deleting member:",
-        err
-      );
-
-      setError(
-        "Unable to delete member."
-      );
-    }
-  };
-
-  /* =========================================================
-     ADD MEMBER
-     ========================================================= */
-
-  const handleAddMember = async () => {
-    if (!newMember.name.trim()) {
-      setError(
-        "Member name is required."
-      );
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-
-      const memberId =
-        generateMemberId();
-
-      const memberRecord = {
-        memberId,
-
-        name:
-          newMember.name.trim(),
-
-        position:
-          newMember.position,
-
-        team:
-          newMember.team,
-
-        status:
-          newMember.status,
-
-        dateJoined:
-          newMember.dateJoined ||
-          null,
-
-        phone:
-          newMember.phone.trim(),
-
-        email:
-          newMember.email.trim(),
-
-        address:
-          newMember.address.trim(),
-
-        certifications:
-          newMember.certifications,
-
-        training:
-          newMember.training,
-
-        beliefs:
-          newMember.beliefs.trim(),
-
-        emergencyContact: {
-          name:
-            newMember
-              .emergencyContactName
-              .trim(),
-
-          phone:
-            newMember
-              .emergencyContactPhone
-              .trim(),
-
-          relationship:
-            newMember
-              .emergencyContactRelationship
-              .trim(),
-        },
-
-        caseIds: [],
-
-        authorizedReportIds: [],
-
-        trainingIds: [],
-
-        personnelActionIds: [],
-
-        signedDocumentIds: [],
-
-        createdAt:
-          serverTimestamp(),
-
-        updatedAt:
-          serverTimestamp(),
-      };
-
-      await addDoc(
-        collection(db, "members"),
-        memberRecord
-      );
-
-      setNewMember({
-        name: "",
-        position: "Investigator",
-        team: "Investigation",
-        status: "Active",
-        dateJoined: "",
-        phone: "",
-        email: "",
-        address: "",
-        certifications: [],
-        training: "Incomplete",
-        beliefs: "",
-        emergencyContactName: "",
-        emergencyContactPhone: "",
-        emergencyContactRelationship: "",
-      });
-
-      setShowAddMember(false);
-
-      await loadMembers();
-    } catch (err) {
-      console.error(
-        "Error creating member:",
-        err
-      );
-
-      setError(
-        "Unable to create the member record."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  /* =========================================================
-     FILTER MEMBERS
-     ========================================================= */
-
-  const filteredMembers =
-    members.filter((member) => {
-      const searchValue =
-        search.toLowerCase();
-
-      const matchesSearch =
-        (member.name || "")
-          .toLowerCase()
-          .includes(searchValue) ||
-        (member.memberId || "")
-          .toLowerCase()
-          .includes(searchValue);
-
-      const matchesStatus =
-        statusFilter === "All" ||
-        member.status ===
-          statusFilter;
-
-      const matchesTeam =
-        teamFilter === "All" ||
-        member.team ===
-          teamFilter;
+      const nextNumber =
+        highestNumber + 1;
 
       return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesTeam
+        "EQP-" +
+        String(nextNumber).padStart(
+          4,
+          "0"
+        )
       );
-    });
 
-  /* =========================================================
-     MEMBER STATS
-     ========================================================= */
+    };
 
-  const activeMembers =
-    members.filter(
-      (member) =>
-        member.status === "Active"
-    ).length;
 
-  const investigationMembers =
-    members.filter(
-      (member) =>
-        member.team ===
-        "Investigation"
-    ).length;
+  /*
+   * =======================================================
+   * ADD EQUIPMENT
+   * =======================================================
+   */
 
-  const administrationMembers =
-    members.filter(
-      (member) =>
-        member.team ===
-        "Administration"
-    ).length;
+  const handleAddEquipment =
+    async (event) => {
 
-  /* =========================================================
-     LOADING SCREEN
-     ========================================================= */
+      event.preventDefault();
+
+      setSaveError("");
+
+
+      /*
+       * -----------------------------------------------------
+       * VALIDATION
+       * -----------------------------------------------------
+       */
+
+      if (
+        !newEquipment.name.trim()
+      ) {
+
+        setSaveError(
+          "Equipment name is required."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !newEquipment.type.trim()
+      ) {
+
+        setSaveError(
+          "Equipment type is required."
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * -----------------------------------------------------
+       * SAVE TO FIRESTORE
+       * -----------------------------------------------------
+       */
+
+      try {
+
+        setSaving(true);
+
+        const equipmentNumber =
+          await generateEquipmentNumber();
+
+
+        await addDoc(
+          collection(
+            db,
+            "equipment"
+          ),
+          {
+
+            /*
+             * Identity
+             */
+
+            equipmentNumber:
+              equipmentNumber,
+
+            name:
+              newEquipment.name.trim(),
+
+            type:
+              newEquipment.type.trim(),
+
+
+            /*
+             * Status
+             */
+
+            status:
+              newEquipment.status,
+
+
+            /*
+             * Assignment
+             */
+
+            assignedTo:
+              newEquipment.assignedTo.trim() ||
+              null,
+
+
+            /*
+             * Condition
+             */
+
+            condition:
+              newEquipment.condition,
+
+
+            /*
+             * Calibration
+             */
+
+            calibration:
+              newEquipment.calibration,
+
+
+            /*
+             * Maintenance
+             */
+
+            lastMaintenance:
+              newEquipment.lastMaintenance ||
+              null,
+
+
+            /*
+             * Database timestamps
+             */
+
+            createdAt:
+              serverTimestamp(),
+
+            updatedAt:
+              serverTimestamp(),
+
+          }
+        );
+
+
+        /*
+         * ---------------------------------------------------
+         * RESET FORM
+         * ---------------------------------------------------
+         */
+
+        setNewEquipment({
+          name: "",
+          type: "",
+          status: "Available",
+          assignedTo: "",
+          condition: "Good",
+          calibration: "N/A",
+          lastMaintenance: "",
+        });
+
+
+        setShowAddModal(false);
+
+      } catch (err) {
+
+        console.error(
+          "Error adding equipment:",
+          err
+        );
+
+        setSaveError(
+          "Unable to add equipment. Please try again."
+        );
+
+      } finally {
+
+        setSaving(false);
+
+      }
+
+    };
+
+
+  /*
+   * =======================================================
+   * LOADING SCREEN
+   * =======================================================
+   */
 
   if (loading) {
+
     return (
       <div className="nh-page">
+
         <div className="nh-loading-state">
-          Loading personnel directory...
+          Loading equipment inventory...
         </div>
+
       </div>
     );
+
   }
 
+
+  /*
+   * =======================================================
+   * RENDER
+   * =======================================================
+   */
+
   return (
+
     <div className="nh-page">
 
-      {/* =====================================================
-          PAGE HEADER
-          ===================================================== */}
 
-      <div className="nh-page-header">
+      {/* ===================================================
+          PAGE HEADER
+          =================================================== */}
+
+      <div className="nh-page-header nh-equipment-header">
 
         <div>
+
           <div className="nh-eyebrow">
-            PERSONNEL DATABASE
+            ASSET MANAGEMENT
           </div>
 
-          <h1 className="nh-page-title">
-            Members
+          <h1>
+            Equipment
           </h1>
 
-          <p className="nh-page-subtitle">
-            New Horizon personnel directory
-            and member management.
+          <p>
+            Inventory, assignments, maintenance, and
+            calibration records.
           </p>
+
         </div>
 
+
         <button
-          className="nh-button nh-button-primary"
-          onClick={() => {
-            setError("");
-            setShowAddMember(true);
-          }}
+          className="nh-primary-button"
+          type="button"
+          onClick={openAddEquipment}
         >
-          + Add Member
+          + Add Equipment
         </button>
 
       </div>
 
 
-      {/* =====================================================
-          ERROR
-          ===================================================== */}
+      {/* ===================================================
+          DATABASE ERROR
+          =================================================== */}
 
       {error && (
+
         <div className="nh-form-error">
           {error}
         </div>
+
       )}
 
 
-      {/* =====================================================
-          MEMBER SUMMARY
-          ===================================================== */}
+      {/* ===================================================
+          EQUIPMENT STATISTICS
+          =================================================== */}
 
-      <section
-        className="nh-member-summary-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
-          gap: "12px",
-          marginBottom: "28px",
-        }}
-      >
+      <div className="nh-equipment-stats">
 
-        {/* TOTAL MEMBERS */}
+        <div className="nh-equipment-stat">
 
-        <div
-          className="nh-card nh-member-summary-card"
-          style={{
-            padding: "18px 20px",
-            minHeight: "105px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-          }}
-        >
-
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: "700",
-              letterSpacing: "1px",
-              color:
-                "var(--nh-muted)",
-            }}
-          >
-            TOTAL MEMBERS
+          <span className="nh-equipment-stat-label">
+            TOTAL EQUIPMENT
           </span>
 
-          <strong
-            style={{
-              fontSize: "28px",
-              lineHeight: "1",
-              marginTop: "8px",
-            }}
-          >
-            {members.length}
+          <strong>
+            {totalEquipment}
           </strong>
 
-          <span
-            style={{
-              fontSize: "10px",
-              color:
-                "var(--nh-muted)",
-              marginTop: "8px",
-            }}
-          >
-            Individually tracked
-            personnel
+          <span className="nh-equipment-stat-detail">
+            Individually tracked assets
           </span>
 
         </div>
 
 
-        {/* ACTIVE */}
+        <div className="nh-equipment-stat">
 
-        <div
-          className="nh-card nh-member-summary-card"
-          style={{
-            padding: "18px 20px",
-            minHeight: "105px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-          }}
-        >
-
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: "700",
-              letterSpacing: "1px",
-              color:
-                "var(--nh-muted)",
-            }}
-          >
-            ACTIVE
+          <span className="nh-equipment-stat-label">
+            AVAILABLE
           </span>
 
-          <strong
-            style={{
-              fontSize: "28px",
-              lineHeight: "1",
-              marginTop: "8px",
-            }}
-          >
-            {activeMembers}
+          <strong>
+            {availableEquipment}
           </strong>
 
-          <span
-            style={{
-              fontSize: "10px",
-              color:
-                "var(--nh-muted)",
-              marginTop: "8px",
-            }}
-          >
-            Currently active
-            personnel
+          <span className="nh-equipment-stat-detail">
+            Ready for assignment
           </span>
 
         </div>
 
 
-        {/* INVESTIGATION */}
+        <div className="nh-equipment-stat">
 
-        <div
-          className="nh-card nh-member-summary-card"
-          style={{
-            padding: "18px 20px",
-            minHeight: "105px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-          }}
-        >
-
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: "700",
-              letterSpacing: "1px",
-              color:
-                "var(--nh-muted)",
-            }}
-          >
-            INVESTIGATION
+          <span className="nh-equipment-stat-label">
+            ASSIGNED
           </span>
 
-          <strong
-            style={{
-              fontSize: "28px",
-              lineHeight: "1",
-              marginTop: "8px",
-            }}
-          >
-            {investigationMembers}
+          <strong>
+            {assignedEquipment}
           </strong>
 
-          <span
-            style={{
-              fontSize: "10px",
-              color:
-                "var(--nh-muted)",
-              marginTop: "8px",
-            }}
-          >
-            Investigation
-            personnel
+          <span className="nh-equipment-stat-detail">
+            Currently assigned
           </span>
 
         </div>
 
 
-        {/* ADMINISTRATION */}
+        <div className="nh-equipment-stat">
 
-        <div
-          className="nh-card nh-member-summary-card"
-          style={{
-            padding: "18px 20px",
-            minHeight: "105px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-          }}
-        >
-
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: "700",
-              letterSpacing: "1px",
-              color:
-                "var(--nh-muted)",
-            }}
-          >
-            ADMINISTRATION
+          <span className="nh-equipment-stat-label">
+            MAINTENANCE
           </span>
 
-          <strong
-            style={{
-              fontSize: "28px",
-              lineHeight: "1",
-              marginTop: "8px",
-            }}
-          >
-            {administrationMembers}
+          <strong>
+            {maintenanceEquipment}
           </strong>
 
-          <span
-            style={{
-              fontSize: "10px",
-              color:
-                "var(--nh-muted)",
-              marginTop: "8px",
-            }}
-          >
-            Administrative
-            personnel
+          <span className="nh-equipment-stat-detail">
+            Requires attention
           </span>
 
         </div>
 
-      </section>
+      </div>
 
 
-      {/* =====================================================
-          DIRECTORY CONTROLS
-          ===================================================== */}
+      {/* ===================================================
+          EQUIPMENT INVENTORY
+          =================================================== */}
 
-      <section className="nh-member-controls nh-card">
-
-        <div className="nh-member-search">
-
-          <input
-            type="text"
-            placeholder="Search by name or member ID..."
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-          />
-
-        </div>
-
-        <select
-          value={teamFilter}
-          onChange={(e) =>
-            setTeamFilter(
-              e.target.value
-            )
-          }
-        >
-
-          <option value="All">
-            All Teams
-          </option>
-
-          <option value="Administration">
-            Administration
-          </option>
-
-          <option value="Investigation">
-            Investigation
-          </option>
-
-        </select>
-
-        <select
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(
-              e.target.value
-            )
-          }
-        >
-
-          <option value="All">
-            All Statuses
-          </option>
-
-          <option value="Active">
-            Active
-          </option>
-
-          <option value="Inactive">
-            Inactive
-          </option>
-
-        </select>
-
-      </section>
-
-
-      {/* =====================================================
-          MEMBER DIRECTORY
-          ===================================================== */}
-
-      <section className="nh-section">
+      <section className="nh-section nh-equipment-section">
 
         <div className="nh-section-header">
 
-          <h2 className="nh-section-title">
-            Personnel Directory
-          </h2>
+          <div>
 
-          <span className="nh-member-count">
-            {filteredMembers.length} members
-          </span>
+            <h2>
+              Equipment Inventory
+            </h2>
+
+            <p>
+              Every equipment item is tracked using a
+              unique NHIS equipment identifier.
+            </p>
+
+          </div>
 
         </div>
 
 
-        <div className="nh-card nh-member-table">
+        {/* =================================================
+            FILTER CONTROLS
+            ================================================= */}
 
-          {/* TABLE HEADER */}
+        <div className="nh-equipment-controls">
 
-          <div className="nh-member-row nh-member-header">
+          <div className="nh-search-box nh-equipment-search">
 
-            <div>
-              Member
-            </div>
+            <span>
+              ⌕
+            </span>
 
-            <div>
-              Position
-            </div>
-
-            <div>
-              Team
-            </div>
-
-            <div>
-              Status
-            </div>
-
-            <div>
-              Training
-            </div>
-
-            <div>
-              Actions
-            </div>
+            <input
+              type="text"
+              placeholder="Search equipment, tag, type, or member..."
+              value={searchTerm}
+              onChange={(event) =>
+                setSearchTerm(
+                  event.target.value
+                )
+              }
+            />
 
           </div>
 
 
-          {/* MEMBERS */}
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event.target.value
+              )
+            }
+            className="nh-filter-select"
+          >
 
-          {filteredMembers.map(
-            (member) => (
+            <option value="All">
+              All Statuses
+            </option>
 
-              <div
-                className="nh-member-row"
-                key={member.firestoreId}
-              >
+            <option value="Available">
+              Available
+            </option>
 
-                {/* MEMBER */}
+            <option value="Assigned">
+              Assigned
+            </option>
 
-                <div className="nh-member-identity">
+            <option value="Maintenance">
+              Maintenance
+            </option>
 
-                  <div className="nh-member-avatar">
+            <option value="Retired">
+              Retired
+            </option>
 
-                    {(member.name || "N")
-                      .split(" ")
-                      .map(
-                        (name) =>
-                          name[0]
-                      )
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
+            <option value="Lost">
+              Lost
+            </option>
 
-                  </div>
-
-                  <div>
-
-                    <div className="nh-list-title">
-                      {member.name}
-                    </div>
-
-                    <div className="nh-list-meta">
-                      {member.memberId}
-                    </div>
-
-                  </div>
-
-                </div>
+          </select>
 
 
-                {/* POSITION */}
+          <select
+            value={typeFilter}
+            onChange={(event) =>
+              setTypeFilter(
+                event.target.value
+              )
+            }
+            className="nh-filter-select"
+          >
 
-                <div className="nh-member-position">
-                  {member.position ||
-                    "N/A"}
-                </div>
+            {equipmentTypes.map(
+              (type) => (
 
+                <option
+                  key={type}
+                  value={type}
+                >
+                  {type === "All"
+                    ? "All Equipment Types"
+                    : type}
+                </option>
 
-                {/* TEAM */}
+              )
+            )}
 
-                <div className="nh-member-team">
-                  {member.team ||
-                    "N/A"}
-                </div>
+          </select>
 
-
-                {/* STATUS */}
-
-                <div>
-
-                  <span
-                    className={
-                      member.status ===
-                      "Active"
-                        ? "nh-status nh-status-active"
-                        : "nh-status nh-status-warning"
-                    }
-                  >
-                    {member.status ||
-                      "Unknown"}
-                  </span>
-
-                </div>
+        </div>
 
 
-                {/* TRAINING */}
+        {/* =================================================
+            INVENTORY TABLE
+            ================================================= */}
 
-                <div>
+        <div className="nh-equipment-table-wrap">
 
-                  <div
-                    className={
-                      member.training ===
-                      "Complete"
-                        ? "nh-training-complete"
-                        : "nh-training-incomplete"
-                    }
-                  >
-                    {member.training ||
-                      "Incomplete"}
-                  </div>
+          <div className="nh-equipment-table">
 
-                  <div className="nh-list-meta">
+            <div className="nh-equipment-row nh-equipment-row-header">
 
-                    {Array.isArray(
-                      member.certifications
-                    )
-                      ? member
-                          .certifications
-                          .length
-                      : 0}
-
-                    {" "}
-
-                    certifications
-
-                  </div>
-
-                </div>
-
-
-                {/* ACTIONS */}
-
-                <div className="nh-member-actions">
-
-                  <button
-                    className="nh-member-profile-button"
-                    onClick={() =>
-                      navigate(
-                        `/members/${member.firestoreId}`
-                      )
-                    }
-                  >
-                    View Profile →
-                  </button>
-
-                  <button
-                    className="nh-delete-button"
-                    onClick={() =>
-                      handleDeleteMember(
-                        member
-                      )
-                    }
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
+              <div>
+                Equipment
               </div>
 
-            )
-          )}
+              <div>
+                Tag
+              </div>
 
+              <div>
+                Status
+              </div>
 
-          {/* EMPTY STATE */}
+              <div>
+                Assigned To
+              </div>
 
-          {filteredMembers.length === 0 && (
+              <div>
+                Calibration
+              </div>
 
-            <div className="nh-member-empty">
+              <div>
+                Condition
+              </div>
 
-              {members.length === 0
-                ? "No personnel records have been created yet."
-                : "No members match the current filters."}
+              <div></div>
 
             </div>
 
-          )}
+
+            {filteredEquipment.map(
+              (item) => (
+
+                <div
+                  className="nh-equipment-row"
+                  key={item.firestoreId}
+                >
+
+                  {/* -----------------------------------------
+                      EQUIPMENT
+                      ----------------------------------------- */}
+
+                  <div className="nh-equipment-identity">
+
+                    <div className="nh-equipment-icon">
+                      ▣
+                    </div>
+
+                    <div>
+
+                      <strong>
+                        {item.name ||
+                          "Unnamed Equipment"}
+                      </strong>
+
+                      <span>
+                        {item.type ||
+                          "Uncategorized"}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      EQUIPMENT TAG
+                      ----------------------------------------- */}
+
+                  <div className="nh-equipment-tag">
+
+                    {item.equipmentNumber ||
+                      item.id ||
+                      item.firestoreId}
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      STATUS
+                      ----------------------------------------- */}
+
+                  <div>
+
+                    <span
+                      className={statusClass(
+                        item.status
+                      )}
+                    >
+                      {item.status ||
+                        "Unknown"}
+                    </span>
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      ASSIGNED TO
+                      ----------------------------------------- */}
+
+                  <div className="nh-equipment-assignment">
+
+                    {item.assignedTo ? (
+
+                      <>
+
+                        <strong>
+                          {item.assignedTo}
+                        </strong>
+
+                        <span>
+                          Member
+                        </span>
+
+                      </>
+
+                    ) : (
+
+                      <span className="nh-muted">
+                        —
+                      </span>
+
+                    )}
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      CALIBRATION
+                      ----------------------------------------- */}
+
+                  <div>
+
+                    <span
+                      className={calibrationClass(
+                        item.calibration
+                      )}
+                    >
+                      {item.calibration ||
+                        "N/A"}
+                    </span>
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      CONDITION
+                      ----------------------------------------- */}
+
+                  <div>
+
+                    <span
+                      className={conditionClass(
+                        item.condition
+                      )}
+                    >
+                      {item.condition ||
+                        "Unknown"}
+                    </span>
+
+                  </div>
+
+
+                  {/* -----------------------------------------
+                      VIEW
+                      ----------------------------------------- */}
+
+                  <div>
+
+                    <button
+                      className="nh-equipment-view-button"
+                      type="button"
+                    >
+                      View
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )
+            )}
+
+
+            {/* =================================================
+                EMPTY STATE
+                ================================================= */}
+
+            {filteredEquipment.length === 0 && (
+
+              <div className="nh-equipment-empty">
+
+                <div className="nh-equipment-empty-icon">
+                  ▣
+                </div>
+
+                <strong>
+                  No equipment registered
+                </strong>
+
+                <span>
+                  {equipment.length === 0
+                    ? "Add your first equipment item to begin building the NHIS inventory."
+                    : "Try changing your search or filter settings."}
+                </span>
+
+
+                {equipment.length === 0 && (
+
+                  <button
+                    type="button"
+                    className="nh-primary-button"
+                    onClick={openAddEquipment}
+                    style={{
+                      marginTop: "16px",
+                    }}
+                  >
+                    + Add Equipment
+                  </button>
+
+                )}
+
+              </div>
+
+            )}
+
+          </div>
 
         </div>
 
       </section>
 
 
-      {/* =====================================================
-          ADD MEMBER MODAL
-          ===================================================== */}
+      {/* ===================================================
+          EQUIPMENT OVERVIEW
+          =================================================== */}
 
-      {showAddMember && (
+      <section className="nh-section nh-equipment-overview">
+
+        <div className="nh-equipment-overview-card">
+
+          <div className="nh-equipment-overview-icon">
+            ↔
+          </div>
+
+          <div>
+
+            <span className="nh-eyebrow">
+              ASSIGNMENTS
+            </span>
+
+            <h3>
+              Equipment Assignment History
+            </h3>
+
+            <p>
+              Track which members have possession of
+              equipment and maintain a history of previous
+              assignments.
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            className="nh-secondary-button"
+          >
+            View Assignments
+          </button>
+
+        </div>
+
+
+        <div className="nh-equipment-overview-card">
+
+          <div className="nh-equipment-overview-icon">
+            ⚙
+          </div>
+
+          <div>
+
+            <span className="nh-eyebrow">
+              MAINTENANCE
+            </span>
+
+            <h3>
+              Maintenance & Calibration
+            </h3>
+
+            <p>
+              Record repairs, service, calibration dates,
+              and upcoming maintenance requirements.
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            className="nh-secondary-button"
+          >
+            View Records
+          </button>
+
+        </div>
+
+      </section>
+
+
+      {/* ===================================================
+          ADD EQUIPMENT MODAL
+          =================================================== */}
+
+      {showAddModal && (
 
         <div
-          className="nh-modal-overlay"
-          onClick={() =>
-            setShowAddMember(false)
-          }
+          className="nh-equipment-modal-overlay"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeAddEquipment();
+            }
+
+          }}
         >
 
-          <div
-            className="nh-modal"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
+          <div className="nh-equipment-modal">
 
-            {/* =================================================
+
+            {/* =============================================
                 MODAL HEADER
-                ================================================= */}
+                ============================================= */}
 
-            <div className="nh-modal-header">
+            <div className="nh-equipment-modal-header">
 
-              <div>
+              <div className="nh-equipment-modal-header-left">
 
-                <div className="nh-command-label">
-                  PERSONNEL MANAGEMENT
+                <div className="nh-equipment-modal-icon">
+                  ▣
                 </div>
 
-                <h2>
-                  Add Member
-                </h2>
+
+                <div className="nh-equipment-modal-title">
+
+                  <div className="nh-eyebrow">
+                    EQUIPMENT REGISTRATION
+                  </div>
+
+                  <h2>
+                    Add Equipment
+                  </h2>
+
+                  <p>
+                    Register a new asset in the NHIS
+                    equipment inventory.
+                  </p>
+
+                </div>
 
               </div>
 
+
               <button
-                className="nh-modal-close"
-                onClick={() =>
-                  setShowAddMember(false)
-                }
+                type="button"
+                className="nh-equipment-modal-close"
+                onClick={closeAddEquipment}
+                disabled={saving}
+                aria-label="Close"
               >
                 ×
               </button>
@@ -967,446 +1251,380 @@ function Members() {
             </div>
 
 
-            {/* =================================================
-                MODAL BODY
-                ================================================= */}
+            {/* =============================================
+                MODAL FORM
+                ============================================= */}
 
-            <div className="nh-modal-body">
+            <form
+              onSubmit={handleAddEquipment}
+              className="nh-equipment-modal-form"
+            >
 
-              <div className="nh-modal-notice">
-
-                A unique member ID will be
-                automatically assigned when
-                this personnel record is
-                created.
-
-              </div>
+              <div className="nh-equipment-modal-body">
 
 
-              <div className="nh-form-grid">
+                {/* =========================================
+                    EQUIPMENT IDENTIFIER
+                    ========================================= */}
 
-                {/* NAME */}
+                <div className="nh-equipment-id-preview">
 
-                <div className="nh-form-group nh-form-group-wide">
+                  <div className="nh-equipment-id-preview-label">
 
-                  <label>
-                    Full Name
-                  </label>
+                    <strong>
+                      NHIS EQUIPMENT IDENTIFIER
+                    </strong>
 
-                  <input
-                    type="text"
-                    value={newMember.name}
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        name:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Full legal name"
-                  />
+                    <span>
+                      Automatically assigned when registered
+                    </span>
+
+                  </div>
+
+
+                  <div className="nh-equipment-id-preview-value">
+                    EQP-####
+                  </div>
 
                 </div>
 
 
-                {/* POSITION */}
+                {/* =========================================
+                    ERROR
+                    ========================================= */}
 
-                <div className="nh-form-group">
+                {saveError && (
 
-                  <label>
-                    Position
-                  </label>
-
-                  <select
-                    value={
-                      newMember.position
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        position:
-                          e.target.value,
-                      })
-                    }
+                  <div
+                    className="nh-form-error"
+                    style={{
+                      marginBottom: "24px",
+                    }}
                   >
+                    {saveError}
+                  </div>
 
-                    <option value="Director">
-                      Director
-                    </option>
-
-                    <option value="Team Lead">
-                      Team Lead
-                    </option>
-
-                    <option value="Assistant Team Lead">
-                      Assistant Team Lead
-                    </option>
-
-                    <option value="Investigator">
-                      Investigator
-                    </option>
-
-                    <option value="Specialist">
-                      Specialist
-                    </option>
-
-                  </select>
-
-                </div>
+                )}
 
 
-                {/* TEAM */}
+                {/* =========================================
+                    BASIC INFORMATION
+                    ========================================= */}
 
-                <div className="nh-form-group">
+                <div className="nh-equipment-form-section">
 
-                  <label>
-                    Team
-                  </label>
-
-                  <select
-                    value={newMember.team}
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        team:
-                          e.target.value,
-                      })
-                    }
-                  >
-
-                    <option value="Administration">
-                      Administration
-                    </option>
-
-                    <option value="Investigation">
-                      Investigation
-                    </option>
-
-                  </select>
-
-                </div>
+                  <div className="nh-equipment-form-section-title">
+                    Basic Information
+                  </div>
 
 
-                {/* STATUS */}
+                  <div className="nh-equipment-form-grid">
 
-                <div className="nh-form-group">
 
-                  <label>
-                    Status
-                  </label>
+                    <div className="nh-equipment-form-field">
 
-                  <select
-                    value={
-                      newMember.status
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        status:
-                          e.target.value,
-                      })
-                    }
-                  >
+                      <label htmlFor="equipment-name">
+                        Equipment Name
+                      </label>
 
-                    <option value="Active">
-                      Active
-                    </option>
+                      <input
+                        id="equipment-name"
+                        type="text"
+                        name="name"
+                        value={
+                          newEquipment.name
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                        placeholder="K2 EMF Meter"
+                        required
+                        autoFocus
+                      />
 
-                    <option value="Inactive">
-                      Inactive
-                    </option>
+                    </div>
 
-                  </select>
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="equipment-type">
+                        Equipment Type
+                      </label>
+
+                      <input
+                        id="equipment-type"
+                        type="text"
+                        name="type"
+                        value={
+                          newEquipment.type
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                        placeholder="EMF Meter"
+                        required
+                      />
+
+                    </div>
+
+                  </div>
 
                 </div>
 
 
-                {/* DATE JOINED */}
+                {/* =========================================
+                    OPERATIONAL STATUS
+                    ========================================= */}
 
-                <div className="nh-form-group">
+                <div className="nh-equipment-form-section">
 
-                  <label>
-                    Date Joined
-                  </label>
-
-                  <input
-                    type="date"
-                    value={
-                      newMember.dateJoined
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        dateJoined:
-                          e.target.value,
-                      })
-                    }
-                  />
-
-                </div>
+                  <div className="nh-equipment-form-section-title">
+                    Operational Status
+                  </div>
 
 
-                {/* PHONE */}
-
-                <div className="nh-form-group">
-
-                  <label>
-                    Phone
-                  </label>
-
-                  <input
-                    type="tel"
-                    value={newMember.phone}
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        phone:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Phone number"
-                  />
-
-                </div>
+                  <div className="nh-equipment-form-grid">
 
 
-                {/* EMAIL */}
+                    <div className="nh-equipment-form-field">
 
-                <div className="nh-form-group">
+                      <label htmlFor="equipment-status">
+                        Status
+                      </label>
 
-                  <label>
-                    Email
-                  </label>
+                      <select
+                        id="equipment-status"
+                        name="status"
+                        value={
+                          newEquipment.status
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                      >
 
-                  <input
-                    type="email"
-                    value={newMember.email}
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        email:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Email address"
-                  />
+                        <option value="Available">
+                          Available
+                        </option>
 
-                </div>
+                        <option value="Assigned">
+                          Assigned
+                        </option>
+
+                        <option value="Maintenance">
+                          Maintenance
+                        </option>
+
+                        <option value="Retired">
+                          Retired
+                        </option>
+
+                        <option value="Lost">
+                          Lost
+                        </option>
+
+                      </select>
+
+                    </div>
 
 
-                {/* ADDRESS */}
+                    <div className="nh-equipment-form-field">
 
-                <div className="nh-form-group nh-form-group-wide">
+                      <label htmlFor="equipment-condition">
+                        Condition
+                      </label>
 
-                  <label>
-                    Address
-                  </label>
+                      <select
+                        id="equipment-condition"
+                        name="condition"
+                        value={
+                          newEquipment.condition
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                      >
 
-                  <input
-                    type="text"
-                    value={
-                      newMember.address
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        address:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Residential address"
-                  />
+                        <option value="Good">
+                          Good
+                        </option>
+
+                        <option value="Fair">
+                          Fair
+                        </option>
+
+                        <option value="Poor">
+                          Poor
+                        </option>
+
+                      </select>
+
+                    </div>
+
+                  </div>
 
                 </div>
 
 
-                {/* TRAINING */}
+                {/* =========================================
+                    ASSIGNMENT
+                    ========================================= */}
 
-                <div className="nh-form-group">
+                <div className="nh-equipment-form-section">
 
-                  <label>
-                    Training Status
-                  </label>
-
-                  <select
-                    value={
-                      newMember.training
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        training:
-                          e.target.value,
-                      })
-                    }
-                  >
-
-                    <option value="Incomplete">
-                      Incomplete
-                    </option>
-
-                    <option value="Complete">
-                      Complete
-                    </option>
-
-                  </select>
-
-                </div>
+                  <div className="nh-equipment-form-section-title">
+                    Assignment
+                  </div>
 
 
-                {/* BELIEFS */}
-
-                <div className="nh-form-group nh-form-group-wide">
-
-                  <label>
-                    Beliefs
-                  </label>
-
-                  <textarea
-                    value={
-                      newMember.beliefs
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        beliefs:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Optional notes regarding investigator beliefs or approach"
-                    rows="3"
-                  />
-
-                </div>
-
-              </div>
+                  <div className="nh-equipment-form-grid">
 
 
-              {/* =================================================
-                  EMERGENCY CONTACT
-                  ================================================= */}
+                    <div className="nh-equipment-form-field">
 
-              <div className="nh-form-section-title">
-                Emergency Contact
-              </div>
+                      <label htmlFor="equipment-assigned">
+                        Assigned To
+                      </label>
 
+                      <input
+                        id="equipment-assigned"
+                        type="text"
+                        name="assignedTo"
+                        value={
+                          newEquipment.assignedTo
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                        placeholder="MEM-####"
+                      />
 
-              <div className="nh-form-grid">
+                      <span className="nh-equipment-field-help">
+                        Leave blank if currently
+                        unassigned.
+                      </span>
 
-                {/* CONTACT NAME */}
+                    </div>
 
-                <div className="nh-form-group">
-
-                  <label>
-                    Contact Name
-                  </label>
-
-                  <input
-                    type="text"
-                    value={
-                      newMember
-                        .emergencyContactName
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        emergencyContactName:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Emergency contact"
-                  />
+                  </div>
 
                 </div>
 
 
-                {/* RELATIONSHIP */}
+                {/* =========================================
+                    MAINTENANCE & CALIBRATION
+                    ========================================= */}
 
-                <div className="nh-form-group">
+                <div className="nh-equipment-form-section">
 
-                  <label>
-                    Relationship
-                  </label>
-
-                  <input
-                    type="text"
-                    value={
-                      newMember
-                        .emergencyContactRelationship
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        emergencyContactRelationship:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Relationship"
-                  />
-
-                </div>
+                  <div className="nh-equipment-form-section-title">
+                    Maintenance & Calibration
+                  </div>
 
 
-                {/* CONTACT PHONE */}
+                  <div className="nh-equipment-form-grid">
 
-                <div className="nh-form-group">
 
-                  <label>
-                    Contact Phone
-                  </label>
+                    <div className="nh-equipment-form-field">
 
-                  <input
-                    type="tel"
-                    value={
-                      newMember
-                        .emergencyContactPhone
-                    }
-                    onChange={(e) =>
-                      setNewMember({
-                        ...newMember,
-                        emergencyContactPhone:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Emergency phone number"
-                  />
+                      <label htmlFor="equipment-calibration">
+                        Calibration
+                      </label>
+
+                      <select
+                        id="equipment-calibration"
+                        name="calibration"
+                        value={
+                          newEquipment.calibration
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                      >
+
+                        <option value="N/A">
+                          N/A
+                        </option>
+
+                        <option value="Current">
+                          Current
+                        </option>
+
+                        <option value="Due">
+                          Due
+                        </option>
+
+                      </select>
+
+                    </div>
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="equipment-maintenance">
+                        Last Maintenance
+                      </label>
+
+                      <input
+                        id="equipment-maintenance"
+                        type="date"
+                        name="lastMaintenance"
+                        value={
+                          newEquipment.lastMaintenance
+                        }
+                        onChange={
+                          handleFormChange
+                        }
+                      />
+
+                    </div>
+
+                  </div>
 
                 </div>
 
               </div>
 
-            </div>
+
+              {/* =============================================
+                  MODAL FOOTER
+                  ============================================= */}
+
+              <div className="nh-equipment-modal-footer">
+
+                <span className="nh-equipment-modal-footer-note">
+                  Record will be stored in the NHIS
+                  equipment registry.
+                </span>
 
 
-            {/* =================================================
-                MODAL FOOTER
-                ================================================= */}
+                <div className="nh-equipment-modal-actions">
 
-            <div className="nh-modal-footer">
+                  <button
+                    type="button"
+                    className="nh-secondary-button"
+                    onClick={closeAddEquipment}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
 
-              <button
-                className="nh-button nh-button-secondary"
-                onClick={() =>
-                  setShowAddMember(false)
-                }
-                disabled={saving}
-              >
-                Cancel
-              </button>
 
-              <button
-                className="nh-button nh-button-primary"
-                onClick={
-                  handleAddMember
-                }
-                disabled={saving}
-              >
-                {saving
-                  ? "Creating..."
-                  : "Create Member"}
-              </button>
+                  <button
+                    type="submit"
+                    className="nh-primary-button"
+                    disabled={saving}
+                  >
+                    {saving
+                      ? "Registering..."
+                      : "Register Equipment"}
+                  </button>
 
-            </div>
+                </div>
+
+              </div>
+
+            </form>
 
           </div>
 
@@ -1415,7 +1633,9 @@ function Members() {
       )}
 
     </div>
+
   );
 }
 
-export default Members;
+
+export default Equipment;

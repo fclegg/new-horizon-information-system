@@ -58,10 +58,12 @@ function Members() {
         collection(db, "members")
       );
 
-      const loadedMembers = snapshot.docs.map((memberDoc) => ({
-        firestoreId: memberDoc.id,
-        ...memberDoc.data(),
-      }));
+      const loadedMembers = snapshot.docs.map(
+        (memberDoc) => ({
+          firestoreId: memberDoc.id,
+          ...memberDoc.data(),
+        })
+      );
 
       loadedMembers.sort((a, b) =>
         (a.memberId || "").localeCompare(
@@ -73,7 +75,10 @@ function Members() {
 
       setMembers(loadedMembers);
     } catch (err) {
-      console.error("Error loading members:", err);
+      console.error(
+        "Error loading members:",
+        err
+      );
 
       setError(
         "Unable to load personnel records."
@@ -130,13 +135,18 @@ function Members() {
       setError("");
 
       await deleteDoc(
-        doc(db, "members", member.firestoreId)
+        doc(
+          db,
+          "members",
+          member.firestoreId
+        )
       );
 
       setMembers((currentMembers) =>
         currentMembers.filter(
           (item) =>
-            item.firestoreId !== member.firestoreId
+            item.firestoreId !==
+            member.firestoreId
         )
       );
     } catch (err) {
@@ -157,7 +167,9 @@ function Members() {
 
   const handleAddMember = async () => {
     if (!newMember.name.trim()) {
-      setError("Member name is required.");
+      setError(
+        "Member name is required."
+      );
       return;
     }
 
@@ -165,21 +177,27 @@ function Members() {
       setSaving(true);
       setError("");
 
-      const memberId = generateMemberId();
+      const memberId =
+        generateMemberId();
 
       const memberRecord = {
         memberId,
 
-        name: newMember.name.trim(),
+        name:
+          newMember.name.trim(),
 
-        position: newMember.position,
+        position:
+          newMember.position,
 
-        team: newMember.team,
+        team:
+          newMember.team,
 
-        status: newMember.status,
+        status:
+          newMember.status,
 
         dateJoined:
-          newMember.dateJoined || null,
+          newMember.dateJoined ||
+          null,
 
         phone:
           newMember.phone.trim(),
@@ -201,13 +219,19 @@ function Members() {
 
         emergencyContact: {
           name:
-            newMember.emergencyContactName.trim(),
+            newMember
+              .emergencyContactName
+              .trim(),
 
           phone:
-            newMember.emergencyContactPhone.trim(),
+            newMember
+              .emergencyContactPhone
+              .trim(),
 
           relationship:
-            newMember.emergencyContactRelationship.trim(),
+            newMember
+              .emergencyContactRelationship
+              .trim(),
         },
 
         caseIds: [],
@@ -220,9 +244,11 @@ function Members() {
 
         signedDocumentIds: [],
 
-        createdAt: serverTimestamp(),
+        createdAt:
+          serverTimestamp(),
 
-        updatedAt: serverTimestamp(),
+        updatedAt:
+          serverTimestamp(),
       };
 
       await addDoc(
@@ -268,8 +294,8 @@ function Members() {
      FILTER MEMBERS
      ========================================================= */
 
-  const filteredMembers = members.filter(
-    (member) => {
+  const filteredMembers =
+    members.filter((member) => {
       const searchValue =
         search.toLowerCase();
 
@@ -283,19 +309,20 @@ function Members() {
 
       const matchesStatus =
         statusFilter === "All" ||
-        member.status === statusFilter;
+        member.status ===
+          statusFilter;
 
       const matchesTeam =
         teamFilter === "All" ||
-        member.team === teamFilter;
+        member.team ===
+          teamFilter;
 
       return (
         matchesSearch &&
         matchesStatus &&
         matchesTeam
       );
-    }
-  );
+    });
 
   /* =========================================================
      MEMBER STATS
@@ -310,13 +337,15 @@ function Members() {
   const investigationMembers =
     members.filter(
       (member) =>
-        member.team === "Investigation"
+        member.team ===
+        "Investigation"
     ).length;
 
   const administrationMembers =
     members.filter(
       (member) =>
-        member.team === "Administration"
+        member.team ===
+        "Administration"
     ).length;
 
   /* =========================================================
@@ -343,12 +372,17 @@ function Members() {
       <div className="nh-page-header">
 
         <div>
+          <div className="nh-eyebrow">
+            PERSONNEL DATABASE
+          </div>
+
           <h1 className="nh-page-title">
             Members
           </h1>
 
           <p className="nh-page-subtitle">
-            New Horizon personnel directory and member management.
+            New Horizon personnel directory
+            and member management.
           </p>
         </div>
 
@@ -364,6 +398,7 @@ function Members() {
 
       </div>
 
+
       {/* =====================================================
           ERROR
           ===================================================== */}
@@ -374,53 +409,227 @@ function Members() {
         </div>
       )}
 
+
       {/* =====================================================
           MEMBER SUMMARY
           ===================================================== */}
 
-      <section className="nh-member-summary-grid">
+      <section
+        className="nh-member-summary-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(4, minmax(0, 1fr))",
+          gap: "12px",
+          marginBottom: "28px",
+        }}
+      >
 
-        <div className="nh-card nh-member-summary-card">
-          <span>
+        {/* TOTAL MEMBERS */}
+
+        <div
+          className="nh-card nh-member-summary-card"
+          style={{
+            padding: "18px 20px",
+            minHeight: "105px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxSizing: "border-box",
+          }}
+        >
+
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+              color:
+                "var(--nh-muted)",
+            }}
+          >
             TOTAL MEMBERS
           </span>
 
-          <strong>
+          <strong
+            style={{
+              fontSize: "28px",
+              lineHeight: "1",
+              marginTop: "8px",
+            }}
+          >
             {members.length}
           </strong>
+
+          <span
+            style={{
+              fontSize: "10px",
+              color:
+                "var(--nh-muted)",
+              marginTop: "8px",
+            }}
+          >
+            Individually tracked
+            personnel
+          </span>
+
         </div>
 
-        <div className="nh-card nh-member-summary-card">
-          <span>
+
+        {/* ACTIVE */}
+
+        <div
+          className="nh-card nh-member-summary-card"
+          style={{
+            padding: "18px 20px",
+            minHeight: "105px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxSizing: "border-box",
+          }}
+        >
+
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+              color:
+                "var(--nh-muted)",
+            }}
+          >
             ACTIVE
           </span>
 
-          <strong>
+          <strong
+            style={{
+              fontSize: "28px",
+              lineHeight: "1",
+              marginTop: "8px",
+            }}
+          >
             {activeMembers}
           </strong>
+
+          <span
+            style={{
+              fontSize: "10px",
+              color:
+                "var(--nh-muted)",
+              marginTop: "8px",
+            }}
+          >
+            Currently active
+            personnel
+          </span>
+
         </div>
 
-        <div className="nh-card nh-member-summary-card">
-          <span>
+
+        {/* INVESTIGATION */}
+
+        <div
+          className="nh-card nh-member-summary-card"
+          style={{
+            padding: "18px 20px",
+            minHeight: "105px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxSizing: "border-box",
+          }}
+        >
+
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+              color:
+                "var(--nh-muted)",
+            }}
+          >
             INVESTIGATION
           </span>
 
-          <strong>
+          <strong
+            style={{
+              fontSize: "28px",
+              lineHeight: "1",
+              marginTop: "8px",
+            }}
+          >
             {investigationMembers}
           </strong>
+
+          <span
+            style={{
+              fontSize: "10px",
+              color:
+                "var(--nh-muted)",
+              marginTop: "8px",
+            }}
+          >
+            Investigation
+            personnel
+          </span>
+
         </div>
 
-        <div className="nh-card nh-member-summary-card">
-          <span>
+
+        {/* ADMINISTRATION */}
+
+        <div
+          className="nh-card nh-member-summary-card"
+          style={{
+            padding: "18px 20px",
+            minHeight: "105px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxSizing: "border-box",
+          }}
+        >
+
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "1px",
+              color:
+                "var(--nh-muted)",
+            }}
+          >
             ADMINISTRATION
           </span>
 
-          <strong>
+          <strong
+            style={{
+              fontSize: "28px",
+              lineHeight: "1",
+              marginTop: "8px",
+            }}
+          >
             {administrationMembers}
           </strong>
+
+          <span
+            style={{
+              fontSize: "10px",
+              color:
+                "var(--nh-muted)",
+              marginTop: "8px",
+            }}
+          >
+            Administrative
+            personnel
+          </span>
+
         </div>
 
       </section>
+
 
       {/* =====================================================
           DIRECTORY CONTROLS
@@ -429,6 +638,7 @@ function Members() {
       <section className="nh-member-controls nh-card">
 
         <div className="nh-member-search">
+
           <input
             type="text"
             placeholder="Search by name or member ID..."
@@ -437,14 +647,18 @@ function Members() {
               setSearch(e.target.value)
             }
           />
+
         </div>
 
         <select
           value={teamFilter}
           onChange={(e) =>
-            setTeamFilter(e.target.value)
+            setTeamFilter(
+              e.target.value
+            )
           }
         >
+
           <option value="All">
             All Teams
           </option>
@@ -456,14 +670,18 @@ function Members() {
           <option value="Investigation">
             Investigation
           </option>
+
         </select>
 
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(e.target.value)
+            setStatusFilter(
+              e.target.value
+            )
           }
         >
+
           <option value="All">
             All Statuses
           </option>
@@ -475,9 +693,11 @@ function Members() {
           <option value="Inactive">
             Inactive
           </option>
+
         </select>
 
       </section>
+
 
       {/* =====================================================
           MEMBER DIRECTORY
@@ -496,6 +716,7 @@ function Members() {
           </span>
 
         </div>
+
 
         <div className="nh-card nh-member-table">
 
@@ -529,146 +750,179 @@ function Members() {
 
           </div>
 
+
           {/* MEMBERS */}
 
-          {filteredMembers.map((member) => (
-            <div
-              className="nh-member-row"
-              key={member.firestoreId}
-            >
+          {filteredMembers.map(
+            (member) => (
 
-              {/* MEMBER */}
+              <div
+                className="nh-member-row"
+                key={member.firestoreId}
+              >
 
-              <div className="nh-member-identity">
+                {/* MEMBER */}
 
-                <div className="nh-member-avatar">
-                  {(member.name || "N")
-                    .split(" ")
-                    .map(
-                      (name) =>
-                        name[0]
-                    )
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
+                <div className="nh-member-identity">
+
+                  <div className="nh-member-avatar">
+
+                    {(member.name || "N")
+                      .split(" ")
+                      .map(
+                        (name) =>
+                          name[0]
+                      )
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+
+                  </div>
+
+                  <div>
+
+                    <div className="nh-list-title">
+                      {member.name}
+                    </div>
+
+                    <div className="nh-list-meta">
+                      {member.memberId}
+                    </div>
+
+                  </div>
+
                 </div>
+
+
+                {/* POSITION */}
+
+                <div className="nh-member-position">
+                  {member.position ||
+                    "N/A"}
+                </div>
+
+
+                {/* TEAM */}
+
+                <div className="nh-member-team">
+                  {member.team ||
+                    "N/A"}
+                </div>
+
+
+                {/* STATUS */}
 
                 <div>
 
-                  <div className="nh-list-title">
-                    {member.name}
+                  <span
+                    className={
+                      member.status ===
+                      "Active"
+                        ? "nh-status nh-status-active"
+                        : "nh-status nh-status-warning"
+                    }
+                  >
+                    {member.status ||
+                      "Unknown"}
+                  </span>
+
+                </div>
+
+
+                {/* TRAINING */}
+
+                <div>
+
+                  <div
+                    className={
+                      member.training ===
+                      "Complete"
+                        ? "nh-training-complete"
+                        : "nh-training-incomplete"
+                    }
+                  >
+                    {member.training ||
+                      "Incomplete"}
                   </div>
 
                   <div className="nh-list-meta">
-                    {member.memberId}
+
+                    {Array.isArray(
+                      member.certifications
+                    )
+                      ? member
+                          .certifications
+                          .length
+                      : 0}
+
+                    {" "}
+
+                    certifications
+
                   </div>
 
                 </div>
 
-              </div>
 
-              {/* POSITION */}
+                {/* ACTIONS */}
 
-              <div className="nh-member-position">
-                {member.position || "N/A"}
-              </div>
+                <div className="nh-member-actions">
 
-              {/* TEAM */}
+                  <button
+                    className="nh-member-profile-button"
+                    onClick={() =>
+                      navigate(
+                        `/members/${member.firestoreId}`
+                      )
+                    }
+                  >
+                    View Profile →
+                  </button>
 
-              <div className="nh-member-team">
-                {member.team || "N/A"}
-              </div>
+                  <button
+                    className="nh-delete-button"
+                    onClick={() =>
+                      handleDeleteMember(
+                        member
+                      )
+                    }
+                  >
+                    Delete
+                  </button>
 
-              {/* STATUS */}
-
-              <div>
-
-                <span
-                  className={
-                    member.status === "Active"
-                      ? "nh-status nh-status-active"
-                      : "nh-status nh-status-warning"
-                  }
-                >
-                  {member.status || "Unknown"}
-                </span>
-
-              </div>
-
-              {/* TRAINING */}
-
-              <div>
-
-                <div
-                  className={
-                    member.training === "Complete"
-                      ? "nh-training-complete"
-                      : "nh-training-incomplete"
-                  }
-                >
-                  {member.training || "Incomplete"}
-                </div>
-
-                <div className="nh-list-meta">
-                  {Array.isArray(
-                    member.certifications
-                  )
-                    ? member.certifications.length
-                    : 0}
-                  {" "}
-                  certifications
                 </div>
 
               </div>
 
-              {/* ACTIONS */}
+            )
+          )}
 
-              <div className="nh-member-actions">
-
-                <button
-                  className="nh-member-profile-button"
-                  onClick={() =>
-                    navigate(
-                      `/members/${member.firestoreId}`
-                    )
-                  }
-                >
-                  View Profile →
-                </button>
-
-                <button
-                  className="nh-delete-button"
-                  onClick={() =>
-                    handleDeleteMember(member)
-                  }
-                >
-                  Delete
-                </button>
-
-              </div>
-
-            </div>
-          ))}
 
           {/* EMPTY STATE */}
 
           {filteredMembers.length === 0 && (
+
             <div className="nh-member-empty">
+
               {members.length === 0
                 ? "No personnel records have been created yet."
                 : "No members match the current filters."}
+
             </div>
+
           )}
 
         </div>
 
       </section>
 
+
       {/* =====================================================
           ADD MEMBER MODAL
           ===================================================== */}
 
       {showAddMember && (
+
         <div
           className="nh-modal-overlay"
           onClick={() =>
@@ -683,7 +937,9 @@ function Members() {
             }
           >
 
-            {/* MODAL HEADER */}
+            {/* =================================================
+                MODAL HEADER
+                ================================================= */}
 
             <div className="nh-modal-header">
 
@@ -710,14 +966,22 @@ function Members() {
 
             </div>
 
-            {/* MODAL BODY */}
+
+            {/* =================================================
+                MODAL BODY
+                ================================================= */}
 
             <div className="nh-modal-body">
 
               <div className="nh-modal-notice">
-                A unique member ID will be automatically
-                assigned when this personnel record is created.
+
+                A unique member ID will be
+                automatically assigned when
+                this personnel record is
+                created.
+
               </div>
+
 
               <div className="nh-form-grid">
 
@@ -735,13 +999,15 @@ function Members() {
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        name: e.target.value,
+                        name:
+                          e.target.value,
                       })
                     }
                     placeholder="Full legal name"
                   />
 
                 </div>
+
 
                 {/* POSITION */}
 
@@ -752,11 +1018,14 @@ function Members() {
                   </label>
 
                   <select
-                    value={newMember.position}
+                    value={
+                      newMember.position
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        position: e.target.value,
+                        position:
+                          e.target.value,
                       })
                     }
                   >
@@ -785,6 +1054,7 @@ function Members() {
 
                 </div>
 
+
                 {/* TEAM */}
 
                 <div className="nh-form-group">
@@ -798,7 +1068,8 @@ function Members() {
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        team: e.target.value,
+                        team:
+                          e.target.value,
                       })
                     }
                   >
@@ -815,6 +1086,7 @@ function Members() {
 
                 </div>
 
+
                 {/* STATUS */}
 
                 <div className="nh-form-group">
@@ -824,11 +1096,14 @@ function Members() {
                   </label>
 
                   <select
-                    value={newMember.status}
+                    value={
+                      newMember.status
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        status: e.target.value,
+                        status:
+                          e.target.value,
                       })
                     }
                   >
@@ -845,6 +1120,7 @@ function Members() {
 
                 </div>
 
+
                 {/* DATE JOINED */}
 
                 <div className="nh-form-group">
@@ -855,7 +1131,9 @@ function Members() {
 
                   <input
                     type="date"
-                    value={newMember.dateJoined}
+                    value={
+                      newMember.dateJoined
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
@@ -866,6 +1144,7 @@ function Members() {
                   />
 
                 </div>
+
 
                 {/* PHONE */}
 
@@ -881,13 +1160,15 @@ function Members() {
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        phone: e.target.value,
+                        phone:
+                          e.target.value,
                       })
                     }
                     placeholder="Phone number"
                   />
 
                 </div>
+
 
                 {/* EMAIL */}
 
@@ -903,13 +1184,15 @@ function Members() {
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        email: e.target.value,
+                        email:
+                          e.target.value,
                       })
                     }
                     placeholder="Email address"
                   />
 
                 </div>
+
 
                 {/* ADDRESS */}
 
@@ -921,17 +1204,21 @@ function Members() {
 
                   <input
                     type="text"
-                    value={newMember.address}
+                    value={
+                      newMember.address
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        address: e.target.value,
+                        address:
+                          e.target.value,
                       })
                     }
                     placeholder="Residential address"
                   />
 
                 </div>
+
 
                 {/* TRAINING */}
 
@@ -942,11 +1229,14 @@ function Members() {
                   </label>
 
                   <select
-                    value={newMember.training}
+                    value={
+                      newMember.training
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        training: e.target.value,
+                        training:
+                          e.target.value,
                       })
                     }
                   >
@@ -963,6 +1253,7 @@ function Members() {
 
                 </div>
 
+
                 {/* BELIEFS */}
 
                 <div className="nh-form-group nh-form-group-wide">
@@ -972,11 +1263,14 @@ function Members() {
                   </label>
 
                   <textarea
-                    value={newMember.beliefs}
+                    value={
+                      newMember.beliefs
+                    }
                     onChange={(e) =>
                       setNewMember({
                         ...newMember,
-                        beliefs: e.target.value,
+                        beliefs:
+                          e.target.value,
                       })
                     }
                     placeholder="Optional notes regarding investigator beliefs or approach"
@@ -987,6 +1281,7 @@ function Members() {
 
               </div>
 
+
               {/* =================================================
                   EMERGENCY CONTACT
                   ================================================= */}
@@ -994,6 +1289,7 @@ function Members() {
               <div className="nh-form-section-title">
                 Emergency Contact
               </div>
+
 
               <div className="nh-form-grid">
 
@@ -1008,7 +1304,8 @@ function Members() {
                   <input
                     type="text"
                     value={
-                      newMember.emergencyContactName
+                      newMember
+                        .emergencyContactName
                     }
                     onChange={(e) =>
                       setNewMember({
@@ -1022,6 +1319,7 @@ function Members() {
 
                 </div>
 
+
                 {/* RELATIONSHIP */}
 
                 <div className="nh-form-group">
@@ -1033,7 +1331,8 @@ function Members() {
                   <input
                     type="text"
                     value={
-                      newMember.emergencyContactRelationship
+                      newMember
+                        .emergencyContactRelationship
                     }
                     onChange={(e) =>
                       setNewMember({
@@ -1047,6 +1346,7 @@ function Members() {
 
                 </div>
 
+
                 {/* CONTACT PHONE */}
 
                 <div className="nh-form-group">
@@ -1058,7 +1358,8 @@ function Members() {
                   <input
                     type="tel"
                     value={
-                      newMember.emergencyContactPhone
+                      newMember
+                        .emergencyContactPhone
                     }
                     onChange={(e) =>
                       setNewMember({
@@ -1075,6 +1376,7 @@ function Members() {
               </div>
 
             </div>
+
 
             {/* =================================================
                 MODAL FOOTER
@@ -1094,7 +1396,9 @@ function Members() {
 
               <button
                 className="nh-button nh-button-primary"
-                onClick={handleAddMember}
+                onClick={
+                  handleAddMember
+                }
                 disabled={saving}
               >
                 {saving
@@ -1107,6 +1411,7 @@ function Members() {
           </div>
 
         </div>
+
       )}
 
     </div>
