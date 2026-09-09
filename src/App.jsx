@@ -47,6 +47,7 @@ import ApplicationReview from "./pages/ApplicationReview";
 
 import CultProfile from "./pages/CultProfile";
 import ObjectCaseFile from "./pages/ObjectCaseFile";
+import MemberProfile from "./pages/MemberProfile";
 
 
 /*
@@ -321,6 +322,11 @@ function App() {
             <Route
               path="/members"
               element={<Members />}
+            />
+
+            <Route
+              path="/members/:memberId"
+              element={<MemberProfile />}
             />
 
 

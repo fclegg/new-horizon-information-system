@@ -7,18 +7,22 @@ import { auth } from "./firebase/config";
 function MainLayout() {
   const [isDirector, setIsDirector] = useState(false);
 
+  // Desktop starts expanded.
+  // Mobile starts collapsed.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth <= 768;
+    }
+
+    return false;
+  });
+
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   /*
    * =========================================================
    * DIRECTOR AUTHORIZATION
    * =========================================================
-   *
-   * For now, the New Horizon Director account is hardcoded.
-   *
-   * Director account:
-   * newhorizonparanormal@gmail.com
-   *
-   * This can later be replaced with Firebase custom claims
-   * when we add a proper role-management system.
    */
 
   useEffect(() => {
@@ -30,8 +34,7 @@ function MainLayout() {
           return;
         }
 
-        const email =
-          user.email?.trim().toLowerCase();
+        const email = user.email?.trim().toLowerCase();
 
         setIsDirector(
           email === "newhorizonparanormal@gmail.com"
@@ -42,6 +45,37 @@ function MainLayout() {
     return () => unsubscribe();
   }, []);
 
+  /*
+   * =========================================================
+   * MOBILE DETECTION
+   * =========================================================
+   */
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  /*
+   * =========================================================
+   * CLOSE MOBILE SIDEBAR WHEN NAVIGATING
+   * =========================================================
+   */
+
+  const closeMobileSidebar = () => {
+    if (window.innerWidth <= 768) {
+      setMobileSidebarOpen(false);
+    }
+  };
 
   /*
    * =========================================================
@@ -63,7 +97,6 @@ function MainLayout() {
       path: "/calendar",
     },
   ];
-
 
   /*
    * =========================================================
@@ -93,7 +126,6 @@ function MainLayout() {
       path: "/resources",
     },
   ];
-
 
   /*
    * =========================================================
@@ -128,7 +160,6 @@ function MainLayout() {
     },
   ];
 
-
   /*
    * =========================================================
    * RENDER
@@ -136,7 +167,21 @@ function MainLayout() {
    */
 
   return (
-    <div className="nh-app">
+    <div
+      className={`nh-app ${
+        sidebarCollapsed ? "sidebar-collapsed" : ""
+      } ${mobileSidebarOpen ? "mobile-sidebar-open" : ""}`}
+    >
+
+      {/* =====================================================
+          MOBILE OVERLAY
+          ===================================================== */}
+
+      <div
+        className="nh-sidebar-overlay"
+        onClick={() => setMobileSidebarOpen(false)}
+      />
+
 
       {/* =====================================================
           SIDEBAR
@@ -145,24 +190,52 @@ function MainLayout() {
       <aside className="nh-sidebar">
 
         {/* =================================================
-            BRAND
+            SIDEBAR HEADER
             ================================================= */}
 
-        <div className="nh-brand">
+        <div className="nh-sidebar-header">
 
-          <div className="nh-brand-mark">
-            NH
-          </div>
+          <div className="nh-brand">
 
-          <div>
-            <div className="nh-brand-name">
-              NEW HORIZON
+            <div className="nh-brand-mark">
+              NH
             </div>
 
-            <div className="nh-brand-subtitle">
-              INFORMATION SYSTEM
+            <div className="nh-brand-text">
+
+              <div className="nh-brand-name">
+                NEW HORIZON
+              </div>
+
+              <div className="nh-brand-subtitle">
+                INFORMATION SYSTEM
+              </div>
+
             </div>
+
           </div>
+
+
+          {/* Desktop collapse button */}
+
+          <button
+            className="nh-sidebar-toggle"
+            onClick={() =>
+              setSidebarCollapsed(!sidebarCollapsed)
+            }
+            aria-label={
+              sidebarCollapsed
+                ? "Expand sidebar"
+                : "Collapse sidebar"
+            }
+            title={
+              sidebarCollapsed
+                ? "Expand sidebar"
+                : "Collapse sidebar"
+            }
+          >
+            {sidebarCollapsed ? "›" : "‹"}
+          </button>
 
         </div>
 
@@ -173,27 +246,25 @@ function MainLayout() {
 
         <div className="nh-sidebar-content">
 
-          {/* MAIN */}
-
           <NavSection
             title="MAIN"
             items={mainNavigation}
+            collapsed={sidebarCollapsed}
+            onNavigate={closeMobileSidebar}
           />
-
-
-          {/* DATABASE */}
 
           <NavSection
             title="DATABASE"
             items={databaseNavigation}
+            collapsed={sidebarCollapsed}
+            onNavigate={closeMobileSidebar}
           />
-
-
-          {/* OPERATIONS */}
 
           <NavSection
             title="OPERATIONS"
             items={operationsNavigation}
+            collapsed={sidebarCollapsed}
+            onNavigate={closeMobileSidebar}
           />
 
 
@@ -210,6 +281,8 @@ function MainLayout() {
                   path: "/applications",
                 },
               ]}
+              collapsed={sidebarCollapsed}
+              onNavigate={closeMobileSidebar}
             />
           )}
 
@@ -226,7 +299,9 @@ function MainLayout() {
 
             <span className="nh-status-dot"></span>
 
-            System Online
+            <span className="nh-system-status-text">
+              System Online
+            </span>
 
           </div>
 
@@ -241,13 +316,35 @@ function MainLayout() {
 
       <div className="nh-content">
 
-        {/* TOP BAR */}
+        {/* =================================================
+            TOP BAR
+            ================================================= */}
 
         <header className="nh-topbar">
 
-          <div className="nh-topbar-title">
-            New Horizon Information System
+          <div className="nh-topbar-left">
+
+            {/* Mobile menu button */}
+
+            <button
+              className="nh-mobile-menu"
+              onClick={() =>
+                setMobileSidebarOpen(true)
+              }
+              aria-label="Open navigation"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+
+
+            <div className="nh-topbar-title">
+              New Horizon Information System
+            </div>
+
           </div>
+
 
           <div className="nh-user-area">
             Authorized Personnel
@@ -256,7 +353,9 @@ function MainLayout() {
         </header>
 
 
-        {/* PAGE CONTENT */}
+        {/* =================================================
+            PAGE CONTENT
+            ================================================= */}
 
         <main className="nh-main">
           <Outlet />
@@ -273,11 +372,20 @@ function MainLayout() {
    NAVIGATION SECTION COMPONENT
    ========================================================= */
 
-function NavSection({ title, items }) {
+function NavSection({
+  title,
+  items,
+  collapsed,
+  onNavigate,
+}) {
   return (
     <div className="nh-nav-section">
 
-      <div className="nh-nav-section-title">
+      <div
+        className={`nh-nav-section-title ${
+          collapsed ? "hidden" : ""
+        }`}
+      >
         {title}
       </div>
 
@@ -289,13 +397,25 @@ function NavSection({ title, items }) {
             key={item.path}
             to={item.path}
             end={item.path === "/"}
+            onClick={onNavigate}
+            title={collapsed ? item.name : undefined}
             className={({ isActive }) =>
               `nh-nav-link ${
                 isActive ? "active" : ""
               }`
             }
           >
-            {item.name}
+
+            {/* Icon placeholder */}
+
+            <span className="nh-nav-icon">
+              <span></span>
+            </span>
+
+            <span className="nh-nav-label">
+              {item.name}
+            </span>
+
           </NavLink>
 
         ))}

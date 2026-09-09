@@ -11196,43 +11196,55 @@ a {
 }
 
 /* =========================================================
-   EQUIPMENT ADD MODAL
+   EQUIPMENT MODAL OVERLAY
    ========================================================= */
 
 .nh-equipment-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+
+  z-index: 9999;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  padding: 32px;
+  padding: 24px;
 
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(4px);
+  box-sizing: border-box;
+
+  background: rgba(0, 0, 0, 0.72);
+
+  overflow: hidden;
 }
 
 
+/* =========================================================
+   EQUIPMENT MODAL
+   ========================================================= */
+
 .nh-equipment-modal {
-  width: 100%;
-  max-width: 720px;
-  max-height: calc(100vh - 64px);
+  width: min(760px, 100%);
+
+  height: min(720px, calc(100vh - 48px));
+
+  max-height: calc(100vh - 48px);
 
   display: flex;
   flex-direction: column;
 
+  box-sizing: border-box;
+
   overflow: hidden;
 
-  background: var(--nh-panel, #171717);
+  background: #111111;
 
-  border: 1px solid #303030;
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 12px;
 
   box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 255, 255, 0.02);
+    0 24px 80px rgba(0, 0, 0, 0.55);
 }
 
 
@@ -11241,96 +11253,28 @@ a {
    ========================================================= */
 
 .nh-equipment-modal-header {
+  flex: 0 0 auto;
+
+  position: relative;
+
+  z-index: 2;
+}
+
+
+/* =========================================================
+   MODAL FORM
+   ========================================================= */
+
+.nh-equipment-modal-form {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
 
-  padding: 26px 30px 22px;
+  flex-direction: column;
 
-  border-bottom: 1px solid #2b2b2b;
-}
+  flex: 1 1 auto;
 
+  min-height: 0;
 
-.nh-equipment-modal-header-left {
-  display: flex;
-  gap: 15px;
-  align-items: flex-start;
-}
-
-
-.nh-equipment-modal-icon {
-  width: 42px;
-  height: 42px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex-shrink: 0;
-
-  color: #ffffff;
-
-  background: #202020;
-
-  border: 1px solid #3a3a3a;
-  border-radius: 7px;
-
-  font-size: 18px;
-}
-
-
-.nh-equipment-modal-title h2 {
-  margin: 3px 0 5px;
-
-  font-size: 22px;
-  font-weight: 600;
-}
-
-
-.nh-equipment-modal-title p {
-  margin: 0;
-
-  color: #8d8d8d;
-
-  font-size: 13px;
-}
-
-
-.nh-equipment-modal-close {
-  width: 32px;
-  height: 32px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex-shrink: 0;
-
-  color: #999999;
-
-  background: transparent;
-
-  border: 1px solid transparent;
-  border-radius: 5px;
-
-  font-size: 20px;
-  line-height: 1;
-
-  cursor: pointer;
-
-  transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-
-
-.nh-equipment-modal-close:hover {
-  color: #ffffff;
-
-  background: #252525;
-
-  border-color: #3a3a3a;
+  overflow: hidden;
 }
 
 
@@ -11339,9 +11283,86 @@ a {
    ========================================================= */
 
 .nh-equipment-modal-body {
-  padding: 28px 30px;
+  flex: 1 1 auto;
+
+  min-height: 0;
 
   overflow-y: auto;
+
+  overflow-x: hidden;
+
+  box-sizing: border-box;
+
+  padding: 24px;
+
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: thin;
+}
+
+
+/* =========================================================
+   MODAL FOOTER
+   ========================================================= */
+
+.nh-equipment-modal-footer {
+  flex: 0 0 auto;
+
+  position: relative;
+
+  z-index: 2;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.nh-equipment-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.nh-equipment-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nh-equipment-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+
+  border-radius: 8px;
+}
+
+.nh-equipment-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .nh-equipment-modal-overlay {
+    padding: 12px;
+  }
+
+  .nh-equipment-modal {
+    width: 100%;
+
+    height: calc(100vh - 24px);
+
+    max-height: calc(100vh - 24px);
+
+    border-radius: 10px;
+  }
+
+  .nh-equipment-modal-body {
+    padding: 18px;
+  }
+
 }
 
 
@@ -17659,4 +17680,589 @@ a {
     flex: 1;
   }
 
+}
+
+/* =========================================================
+   HAUNTINGS MAP - LEAFLET
+   ========================================================= */
+
+.nh-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 650px;
+  position: relative;
+  z-index: 1;
+}
+
+.nh-map-canvas {
+  position: relative;
+  min-height: 650px;
+  overflow: hidden;
+}
+
+/* Leaflet itself */
+.nh-leaflet-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+  min-height: 650px;
+}
+
+/* =========================================================
+   NHIS MAP LAYER SWITCHER
+   ========================================================= */
+
+.nh-map-canvas .leaflet-control-layers {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  background: rgba(10, 10, 10, 0.94);
+  color: #e8e8e8;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  font-family: inherit;
+}
+
+.nh-map-canvas
+  .leaflet-control-layers-expanded {
+  padding: 10px 12px;
+  min-width: 130px;
+}
+
+.nh-map-canvas
+  .leaflet-control-layers-expanded
+  label {
+  display: block;
+  margin: 7px 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nh-map-canvas
+  .leaflet-control-layers-selector {
+  margin-right: 8px;
+  accent-color: #b3122d;
+}
+
+.nh-map-canvas
+  .leaflet-control-layers-expanded
+  label:hover {
+  color: #ffffff;
+}
+
+/* =========================================================
+   REAL MAP MARKERS
+   ========================================================= */
+
+.nh-leaflet-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.nh-leaflet-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  position: relative;
+  transform: translate(-50%, -50%);
+  background: #b3122d;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 3px rgba(179, 18, 45, 0.25),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.reported {
+  background: #d8b24c;
+  box-shadow:
+    0 0 0 3px rgba(216, 178, 76, 0.22),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.case {
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.2),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.selected {
+  width: 24px;
+  height: 24px;
+  box-shadow:
+    0 0 0 5px rgba(179, 18, 45, 0.25),
+    0 0 18px rgba(179, 18, 45, 0.75);
+}
+
+/* =========================================================
+   LEAFLET DEBUG / DISPLAY FIX
+   ========================================================= */
+
+.nh-map-layout {
+  width: 100%;
+  min-height: 650px;
+}
+
+.nh-map-canvas {
+  width: 100%;
+  height: 650px;
+  min-height: 650px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nh-leaflet-map {
+  display: block;
+  width: 100%;
+  height: 650px;
+  min-height: 650px;
+  position: relative;
+  z-index: 1;
+}
+
+.nh-leaflet-map.leaflet-container {
+  display: block;
+  width: 100%;
+  height: 650px;
+}
+
+/* =========================================================
+   HAUNTINGS MAP - FULL WIDTH
+========================================================= */
+
+.nh-map-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nh-map-add-button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #19191c;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.nh-map-add-button:hover {
+  background: #252529;
+}
+
+.nh-map-layout {
+  width: 100%;
+  min-height: 650px;
+}
+
+.nh-map-canvas {
+  width: 100%;
+  height: 650px;
+  min-height: 650px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nh-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 650px;
+  display: block;
+  position: relative;
+}
+
+/* =========================================================
+   MAP LAYER CONTROL
+========================================================= */
+
+.nh-map-canvas .leaflet-control-layers {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(10, 10, 10, 0.94);
+  color: #e8e8e8;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+.nh-map-canvas .leaflet-control-layers-expanded {
+  padding: 10px 12px;
+  min-width: 130px;
+}
+
+.nh-map-canvas .leaflet-control-layers-expanded label {
+  display: block;
+  margin: 7px 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nh-map-canvas .leaflet-control-layers-selector {
+  margin-right: 8px;
+  accent-color: #b3122d;
+}
+
+/* =========================================================
+   MAP LEGEND / OVERLAY
+========================================================= */
+
+.nh-map-overlay,
+.nh-map-legend {
+  z-index: 500;
+}
+
+/* =========================================================
+   MAP MARKERS
+========================================================= */
+
+.nh-leaflet-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.nh-leaflet-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  position: relative;
+  transform: translate(-50%, -50%);
+  background: #b3122d;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 3px rgba(179, 18, 45, 0.25),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.reported {
+  background: #d8b24c;
+  box-shadow:
+    0 0 0 3px rgba(216, 178, 76, 0.22),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.case {
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.2),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.nh-leaflet-marker.selected {
+  width: 24px;
+  height: 24px;
+  box-shadow:
+    0 0 0 5px rgba(179, 18, 45, 0.25),
+    0 0 18px rgba(179, 18, 45, 0.75);
+}
+
+/* =========================================================
+   ARCHIVED FILTER
+========================================================= */
+
+.nh-map-archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nh-map-archive-toggle input {
+  accent-color: #9b1c2e;
+}
+
+/* =========================================================
+   COORDINATE PICKER NOTICE
+========================================================= */
+
+.nh-map-picker-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(179, 18, 45, 0.45);
+  background: rgba(179, 18, 45, 0.12);
+}
+
+.nh-map-picker-notice strong {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.nh-map-picker-notice span {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.nh-map-picker-notice button {
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #19191c;
+  color: #fff;
+  padding: 7px 11px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   LOCATION MODAL
+========================================================= */
+
+.nh-location-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.nh-location-modal {
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #111113;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
+  padding: 26px;
+}
+
+.nh-location-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.nh-location-modal-header h2 {
+  margin: 5px 0;
+}
+
+.nh-location-modal-header p {
+  margin: 0;
+  opacity: 0.6;
+}
+
+.nh-location-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nh-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.nh-form-grid.coordinates {
+  grid-template-columns: 1fr 1fr;
+}
+
+.nh-location-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.nh-location-form label > span,
+.nh-location-coordinate-header > div > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+.nh-location-form input,
+.nh-location-form select,
+.nh-location-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #19191c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 4px;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.nh-location-form textarea {
+  resize: vertical;
+}
+
+.nh-location-coordinate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.nh-location-coordinate-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nh-location-coordinate-header small {
+  opacity: 0.5;
+}
+
+.nh-location-coordinate-header button {
+  background: #19191c;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.nh-location-coordinate-header button:hover {
+  background: #252529;
+}
+
+.nh-map-coordinate-success {
+  padding: 10px 12px;
+  border: 1px solid rgba(70, 170, 100, 0.35);
+  background: rgba(70, 170, 100, 0.08);
+  font-size: 12px;
+}
+
+.nh-map-coordinate-success strong {
+  margin-left: 6px;
+}
+
+.nh-location-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 5px;
+}
+
+.nh-location-modal-actions button {
+  padding: 10px 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #19191c;
+  color: #fff;
+  cursor: pointer;
+}
+
+.nh-location-modal-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   LOCATION PANEL ACTIONS
+========================================================= */
+
+.nh-location-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nh-location-panel-actions button {
+  cursor: pointer;
+}
+
+.nh-danger-button {
+  border-color: rgba(180, 30, 50, 0.5) !important;
+}
+
+.nh-danger-button:hover {
+  background: rgba(150, 20, 40, 0.2) !important;
+}
+
+/* =========================================================
+   ARCHIVED LIST RECORD
+========================================================= */
+
+.nh-map-table-row.archived {
+  opacity: 0.55;
+}
+
+.nh-map-table-row.archived:hover {
+  opacity: 0.85;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .nh-map-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nh-form-grid,
+  .nh-form-grid.coordinates {
+    grid-template-columns: 1fr;
+  }
+
+  .nh-location-modal-backdrop {
+    padding: 12px;
+  }
+
+  .nh-location-modal {
+    padding: 20px;
+    max-height: 94vh;
+  }
+
+  .nh-map-picker-notice {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .nh-map-picker-notice button {
+    margin-left: 0;
+  }
+
+}
+
+/* =========================================================
+   HAUNTINGS MAP - FULL WIDTH OVERRIDE
+   Removes the old LOCATION RECORDS sidebar column
+========================================================= */
+
+.nh-map-page .nh-map-layout {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 650px;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+}
+
+.nh-map-page .nh-map-canvas {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 650px;
+  min-height: 650px;
+  margin: 0 !important;
+  grid-column: auto !important;
+}
+
+.nh-map-page .nh-leaflet-map {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 650px;
+  max-width: none !important;
+}
+
+/*
+ * Make sure no old sidebar styling can reserve
+ * horizontal space.
+ */
+
+.nh-map-page .nh-map-sidebar {
+  display: none !important;
 }

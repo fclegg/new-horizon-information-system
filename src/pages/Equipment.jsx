@@ -6,6 +6,8 @@ import {
   getDocs,
   onSnapshot,
   serverTimestamp,
+  updateDoc,
+  doc,
 } from "firebase/firestore";
 
 import { db } from "../firebase/config";
@@ -73,9 +75,15 @@ function Equipment() {
   const [showAddModal, setShowAddModal] =
     useState(false);
 
+  const [selectedEquipment, setSelectedEquipment] =
+    useState(null);
+
   const [saving, setSaving] = useState(false);
 
   const [saveError, setSaveError] =
+    useState("");
+
+  const [editError, setEditError] =
     useState("");
 
 
@@ -99,14 +107,26 @@ function Equipment() {
 
   /*
    * =======================================================
+   * EDIT EQUIPMENT FORM
+   * =======================================================
+   */
+
+  const [editEquipment, setEditEquipment] =
+    useState({
+      name: "",
+      type: "",
+      status: "Available",
+      assignedTo: "",
+      condition: "Good",
+      calibration: "N/A",
+      lastMaintenance: "",
+    });
+
+
+  /*
+   * =======================================================
    * FIRESTORE — EQUIPMENT
    * =======================================================
-   *
-   * Equipment is stored in:
-   *
-   * equipment
-   *
-   * onSnapshot keeps the inventory live.
    */
 
   useEffect(() => {
@@ -294,6 +314,31 @@ function Equipment() {
 
   /*
    * =======================================================
+   * EDIT FORM INPUT HANDLER
+   * =======================================================
+   */
+
+  const handleEditFormChange = (
+    event
+  ) => {
+
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setEditEquipment(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    );
+
+  };
+
+
+  /*
+   * =======================================================
    * OPEN ADD EQUIPMENT
    * =======================================================
    */
@@ -338,18 +383,52 @@ function Equipment() {
 
   /*
    * =======================================================
+   * OPEN EQUIPMENT DETAILS
+   * =======================================================
+   */
+
+  const openEquipmentDetails = (item) => {
+
+    setEditError("");
+
+    setEditEquipment({
+      name: item.name || "",
+      type: item.type || "",
+      status: item.status || "Available",
+      assignedTo: item.assignedTo || "",
+      condition: item.condition || "Good",
+      calibration: item.calibration || "N/A",
+      lastMaintenance: item.lastMaintenance || "",
+    });
+
+    setSelectedEquipment(item);
+
+  };
+
+
+  /*
+   * =======================================================
+   * CLOSE EQUIPMENT DETAILS
+   * =======================================================
+   */
+
+  const closeEquipmentDetails = () => {
+
+    if (saving) {
+      return;
+    }
+
+    setSelectedEquipment(null);
+
+    setEditError("");
+
+  };
+
+
+  /*
+   * =======================================================
    * GENERATE NEXT EQUIPMENT NUMBER
    * =======================================================
-   *
-   * Equipment identifiers use:
-   *
-   * EQP-####
-   *
-   * Example:
-   *
-   * EQP-0001
-   * EQP-0002
-   * EQP-0003
    */
 
   const generateEquipmentNumber =
@@ -393,8 +472,10 @@ function Equipment() {
               number >
               highestNumber
             ) {
+
               highestNumber =
                 number;
+
             }
 
           }
@@ -483,10 +564,6 @@ function Equipment() {
           ),
           {
 
-            /*
-             * Identity
-             */
-
             equipmentNumber:
               equipmentNumber,
 
@@ -496,52 +573,22 @@ function Equipment() {
             type:
               newEquipment.type.trim(),
 
-
-            /*
-             * Status
-             */
-
             status:
               newEquipment.status,
-
-
-            /*
-             * Assignment
-             */
 
             assignedTo:
               newEquipment.assignedTo.trim() ||
               null,
 
-
-            /*
-             * Condition
-             */
-
             condition:
               newEquipment.condition,
-
-
-            /*
-             * Calibration
-             */
 
             calibration:
               newEquipment.calibration,
 
-
-            /*
-             * Maintenance
-             */
-
             lastMaintenance:
               newEquipment.lastMaintenance ||
               null,
-
-
-            /*
-             * Database timestamps
-             */
 
             createdAt:
               serverTimestamp(),
@@ -581,6 +628,155 @@ function Equipment() {
 
         setSaveError(
           "Unable to add equipment. Please try again."
+        );
+
+      } finally {
+
+        setSaving(false);
+
+      }
+
+    };
+
+
+  /*
+   * =======================================================
+   * SAVE EQUIPMENT EDITS
+   * =======================================================
+   */
+
+  const handleSaveEquipment =
+    async (event) => {
+
+      event.preventDefault();
+
+      setEditError("");
+
+
+      if (!selectedEquipment) {
+        return;
+      }
+
+
+      /*
+       * -----------------------------------------------------
+       * VALIDATION
+       * -----------------------------------------------------
+       */
+
+      if (
+        !editEquipment.name.trim()
+      ) {
+
+        setEditError(
+          "Equipment name is required."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !editEquipment.type.trim()
+      ) {
+
+        setEditError(
+          "Equipment type is required."
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * -----------------------------------------------------
+       * SAVE CHANGES
+       * -----------------------------------------------------
+       */
+
+      try {
+
+        setSaving(true);
+
+        const equipmentRef =
+          doc(
+            db,
+            "equipment",
+            selectedEquipment.firestoreId
+          );
+
+
+        await updateDoc(
+          equipmentRef,
+          {
+
+            name:
+              editEquipment.name.trim(),
+
+            type:
+              editEquipment.type.trim(),
+
+            status:
+              editEquipment.status,
+
+            assignedTo:
+              editEquipment.assignedTo.trim() ||
+              null,
+
+            condition:
+              editEquipment.condition,
+
+            calibration:
+              editEquipment.calibration,
+
+            lastMaintenance:
+              editEquipment.lastMaintenance ||
+              null,
+
+            updatedAt:
+              serverTimestamp(),
+
+          }
+        );
+
+
+        /*
+         * ---------------------------------------------------
+         * UPDATE LOCAL SELECTED RECORD
+         * ---------------------------------------------------
+         */
+
+        setSelectedEquipment(
+          (previous) => ({
+            ...previous,
+            ...editEquipment,
+            name:
+              editEquipment.name.trim(),
+            type:
+              editEquipment.type.trim(),
+            assignedTo:
+              editEquipment.assignedTo.trim() ||
+              null,
+            lastMaintenance:
+              editEquipment.lastMaintenance ||
+              null,
+          })
+        );
+
+
+        setEditError("");
+
+      } catch (err) {
+
+        console.error(
+          "Error updating equipment:",
+          err
+        );
+
+        setEditError(
+          "Unable to save changes. Please check your Firestore permissions."
         );
 
       } finally {
@@ -888,14 +1084,6 @@ function Equipment() {
               </div>
 
               <div>
-                Assigned To
-              </div>
-
-              <div>
-                Calibration
-              </div>
-
-              <div>
                 Condition
               </div>
 
@@ -971,55 +1159,6 @@ function Equipment() {
 
 
                   {/* -----------------------------------------
-                      ASSIGNED TO
-                      ----------------------------------------- */}
-
-                  <div className="nh-equipment-assignment">
-
-                    {item.assignedTo ? (
-
-                      <>
-
-                        <strong>
-                          {item.assignedTo}
-                        </strong>
-
-                        <span>
-                          Member
-                        </span>
-
-                      </>
-
-                    ) : (
-
-                      <span className="nh-muted">
-                        —
-                      </span>
-
-                    )}
-
-                  </div>
-
-
-                  {/* -----------------------------------------
-                      CALIBRATION
-                      ----------------------------------------- */}
-
-                  <div>
-
-                    <span
-                      className={calibrationClass(
-                        item.calibration
-                      )}
-                    >
-                      {item.calibration ||
-                        "N/A"}
-                    </span>
-
-                  </div>
-
-
-                  {/* -----------------------------------------
                       CONDITION
                       ----------------------------------------- */}
 
@@ -1046,6 +1185,9 @@ function Equipment() {
                     <button
                       className="nh-equipment-view-button"
                       type="button"
+                      onClick={() =>
+                        openEquipmentDetails(item)
+                      }
                     >
                       View
                     </button>
@@ -1618,6 +1760,490 @@ function Equipment() {
                     {saving
                       ? "Registering..."
                       : "Register Equipment"}
+                  </button>
+
+                </div>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* ===================================================
+          VIEW / EDIT EQUIPMENT MODAL
+          =================================================== */}
+
+      {selectedEquipment && (
+
+        <div
+          className="nh-equipment-modal-overlay"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeEquipmentDetails();
+            }
+
+          }}
+        >
+
+          <div className="nh-equipment-modal">
+
+
+            {/* =============================================
+                MODAL HEADER
+                ============================================= */}
+
+            <div className="nh-equipment-modal-header">
+
+              <div className="nh-equipment-modal-header-left">
+
+                <div className="nh-equipment-modal-icon">
+                  ▣
+                </div>
+
+
+                <div className="nh-equipment-modal-title">
+
+                  <div className="nh-eyebrow">
+                    EQUIPMENT RECORD
+                  </div>
+
+                  <h2>
+                    {editEquipment.name ||
+                      "Equipment Record"}
+                  </h2>
+
+                  <p>
+                    {editEquipment.type ||
+                      "Uncategorized"}
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <button
+                type="button"
+                className="nh-equipment-modal-close"
+                onClick={closeEquipmentDetails}
+                disabled={saving}
+                aria-label="Close"
+              >
+                ×
+              </button>
+
+            </div>
+
+
+            {/* =============================================
+                EDIT FORM
+                ============================================= */}
+
+            <form
+              onSubmit={handleSaveEquipment}
+              className="nh-equipment-modal-form"
+            >
+
+              <div className="nh-equipment-modal-body">
+
+
+                {/* =========================================
+                    EQUIPMENT IDENTIFIER
+                    ========================================= */}
+
+                <div className="nh-equipment-id-preview">
+
+                  <div className="nh-equipment-id-preview-label">
+
+                    <strong>
+                      NHIS EQUIPMENT IDENTIFIER
+                    </strong>
+
+                    <span>
+                      Equipment identifier cannot be changed
+                    </span>
+
+                  </div>
+
+
+                  <div className="nh-equipment-id-preview-value">
+                    {selectedEquipment.equipmentNumber ||
+                      selectedEquipment.id ||
+                      selectedEquipment.firestoreId}
+                  </div>
+
+                </div>
+
+
+                {/* =========================================
+                    ERROR
+                    ========================================= */}
+
+                {editError && (
+
+                  <div
+                    className="nh-form-error"
+                    style={{
+                      marginBottom: "24px",
+                    }}
+                  >
+                    {editError}
+                  </div>
+
+                )}
+
+
+                {/* =========================================
+                    BASIC INFORMATION
+                    ========================================= */}
+
+                <div className="nh-equipment-form-section">
+
+                  <div className="nh-equipment-form-section-title">
+                    Basic Information
+                  </div>
+
+
+                  <div className="nh-equipment-form-grid">
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-name">
+                        Equipment Name
+                      </label>
+
+                      <input
+                        id="edit-equipment-name"
+                        type="text"
+                        name="name"
+                        value={
+                          editEquipment.name
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                        placeholder="K2 EMF Meter"
+                        required
+                        autoFocus
+                      />
+
+                    </div>
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-type">
+                        Equipment Type
+                      </label>
+
+                      <input
+                        id="edit-equipment-type"
+                        type="text"
+                        name="type"
+                        value={
+                          editEquipment.type
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                        placeholder="EMF Meter"
+                        required
+                      />
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* =========================================
+                    OPERATIONAL STATUS
+                    ========================================= */}
+
+                <div className="nh-equipment-form-section">
+
+                  <div className="nh-equipment-form-section-title">
+                    Operational Status
+                  </div>
+
+
+                  <div className="nh-equipment-form-grid">
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-status">
+                        Status
+                      </label>
+
+                      <select
+                        id="edit-equipment-status"
+                        name="status"
+                        value={
+                          editEquipment.status
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                      >
+
+                        <option value="Available">
+                          Available
+                        </option>
+
+                        <option value="Assigned">
+                          Assigned
+                        </option>
+
+                        <option value="Maintenance">
+                          Maintenance
+                        </option>
+
+                        <option value="Retired">
+                          Retired
+                        </option>
+
+                        <option value="Lost">
+                          Lost
+                        </option>
+
+                      </select>
+
+                    </div>
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-condition">
+                        Condition
+                      </label>
+
+                      <select
+                        id="edit-equipment-condition"
+                        name="condition"
+                        value={
+                          editEquipment.condition
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                      >
+
+                        <option value="Good">
+                          Good
+                        </option>
+
+                        <option value="Fair">
+                          Fair
+                        </option>
+
+                        <option value="Poor">
+                          Poor
+                        </option>
+
+                      </select>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* =========================================
+                    ASSIGNMENT
+                    ========================================= */}
+
+                <div className="nh-equipment-form-section">
+
+                  <div className="nh-equipment-form-section-title">
+                    Assignment
+                  </div>
+
+
+                  <div className="nh-equipment-form-grid">
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-assigned">
+                        Assigned To
+                      </label>
+
+                      <input
+                        id="edit-equipment-assigned"
+                        type="text"
+                        name="assignedTo"
+                        value={
+                          editEquipment.assignedTo
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                        placeholder="MEM-####"
+                      />
+
+                      <span className="nh-equipment-field-help">
+                        Leave blank if currently
+                        unassigned.
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* =========================================
+                    MAINTENANCE & CALIBRATION
+                    ========================================= */}
+
+                <div className="nh-equipment-form-section">
+
+                  <div className="nh-equipment-form-section-title">
+                    Maintenance & Calibration
+                  </div>
+
+
+                  <div className="nh-equipment-form-grid">
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-calibration">
+                        Calibration
+                      </label>
+
+                      <select
+                        id="edit-equipment-calibration"
+                        name="calibration"
+                        value={
+                          editEquipment.calibration
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                      >
+
+                        <option value="N/A">
+                          N/A
+                        </option>
+
+                        <option value="Current">
+                          Current
+                        </option>
+
+                        <option value="Due">
+                          Due
+                        </option>
+
+                      </select>
+
+                    </div>
+
+
+                    <div className="nh-equipment-form-field">
+
+                      <label htmlFor="edit-equipment-maintenance">
+                        Last Maintenance
+                      </label>
+
+                      <input
+                        id="edit-equipment-maintenance"
+                        type="date"
+                        name="lastMaintenance"
+                        value={
+                          editEquipment.lastMaintenance
+                        }
+                        onChange={
+                          handleEditFormChange
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* =========================================
+                    DATABASE INFORMATION
+                    ========================================= */}
+
+                <div className="nh-equipment-form-section">
+
+                  <div className="nh-equipment-form-section-title">
+                    Database Record
+                  </div>
+
+
+                  <div className="nh-equipment-form-grid">
+
+                    <div className="nh-equipment-form-field">
+
+                      <label>
+                        Firestore Document ID
+                      </label>
+
+                      <div>
+                        {selectedEquipment.firestoreId}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              {/* =============================================
+                  EDIT MODAL FOOTER
+                  ============================================= */}
+
+              <div className="nh-equipment-modal-footer">
+
+                <span className="nh-equipment-modal-footer-note">
+                  Changes will be saved to the NHIS
+                  equipment registry.
+                </span>
+
+
+                <div className="nh-equipment-modal-actions">
+
+                  <button
+                    type="button"
+                    className="nh-secondary-button"
+                    onClick={closeEquipmentDetails}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+
+
+                  <button
+                    type="submit"
+                    className="nh-primary-button"
+                    disabled={saving}
+                  >
+                    {saving
+                      ? "Saving..."
+                      : "Save Changes"}
                   </button>
 
                 </div>
